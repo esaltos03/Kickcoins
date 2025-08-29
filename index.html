@@ -5,26 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kickcoins - Fantasy Betting</title>
 <style>
-body { font-family: Arial, sans-serif; background: linear-gradient(135deg,#121212,#1a1a1a); color: #fff; margin:0; padding:0; }
-header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background-color:#1a1a1a; box-shadow:0 2px 6px rgba(0,0,0,0.5); }
-header h1 { font-size:1.5em; margin:0; }
-header .account { display:flex; align-items:center; gap:15px; font-weight:bold; font-size:1em; }
-header .account span.moneybag { display:inline-block; transform-origin:center; transition: transform 0.3s ease; }
-.tabs { display:flex; background-color:#1a1a1a; }
-.tab { flex:1; padding:10px; text-align:center; cursor:pointer; border-bottom:2px solid #121212; transition: all 0.2s; }
-.tab:hover { background-color:#222; }
-.tab.active { border-bottom:2px solid #00ff00; color:#00ff00; font-weight:bold; }
+body { font-family: Arial, sans-serif; background: #111; color: #fff; margin:0; padding:0; }
+header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#1a1a1a; }
+header h1 { margin:0; }
+header .account { display:flex; align-items:center; gap:10px; font-weight:bold; }
+header .account span.moneybag { display:inline-block; transform-origin:center; transition: transform 0.3s; }
+.tabs { display:flex; }
+.tab { flex:1; padding:10px; text-align:center; cursor:pointer; border-bottom:2px solid #111; }
+.tab.active { border-bottom:2px solid #0f0; color:#0f0; font-weight:bold; }
 main { padding:20px; }
-.card { background: linear-gradient(145deg,#1f1f1f,#292929); padding:15px; margin:10px 0; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.6); }
-.prop { display:flex; justify-content:space-between; align-items:center; margin:10px 0; }
+.card { background:#222; padding:15px; margin:10px 0; border-radius:10px; }
+.prop { display:flex; justify-content:space-between; align-items:center; margin:5px 0; }
 .prop input[type="number"] { width:60px; margin-left:10px; padding:3px; border-radius:5px; border:none; }
-select { padding:5px; border-radius:5px; border:none; background:#222; color:#fff; }
-button { padding:5px 12px; cursor:pointer; border:none; border-radius:8px; background:linear-gradient(to right,#00ff00,#009900); color:#000; font-weight:bold; transition: all 0.2s; }
-button:hover { background:linear-gradient(to right,#00ff80,#00cc00); }
-.green { color:#00ff00; font-weight:bold; }
-.yellow { color:#ffff00; font-weight:bold; }
-.orange { color:#ff9900; font-weight:bold; }
-.red { color:#ff0000; font-weight:bold; }
+select { padding:5px; border-radius:5px; border:none; background:#333; color:#fff; }
+button { padding:5px 12px; border:none; border-radius:8px; background:linear-gradient(to right,#0f0,#090); color:#000; font-weight:bold; cursor:pointer; }
+button:disabled { opacity:0.5; cursor:not-allowed; }
 table { width:100%; border-collapse:collapse; }
 th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 .medal { width:20px; height:20px; vertical-align:middle; margin-right:5px; }
@@ -47,21 +42,19 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 </div>
 
 <main>
-    <!-- MVP Voting -->
     <div class="tab-content" id="vote-tab">
         <div class="card">
             <h2>Vote for MVP</h2>
-            <label>1st Place:</label>
-            <select id="vote1" disabled></select>
-            <label>2nd Place:</label>
-            <select id="vote2" disabled></select>
-            <label>3rd Place:</label>
-            <select id="vote3" disabled></select>
-            <button id="submit-votes" disabled>Submit Votes</button>
+            <div id="vote-section">
+                <label>1st Place:</label><select id="vote1" disabled></select>
+                <label>2nd Place:</label><select id="vote2" disabled></select>
+                <label>3rd Place:</label><select id="vote3" disabled></select>
+                <button id="submit-votes" disabled>Submit Votes</button>
+            </div>
+            <div id="vote-thanks" style="display:none;">Thank you for your vote!</div>
         </div>
     </div>
 
-    <!-- Betting -->
     <div class="tab-content" id="bet-tab" style="display:none;">
         <div class="card">
             <h2>Betting</h2>
@@ -73,7 +66,6 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         </div>
     </div>
 
-    <!-- Leaderboards -->
     <div class="tab-content" id="leaderboard-tab" style="display:none;">
         <div class="card">
             <h2>MVP Leaderboard</h2>
@@ -91,7 +83,6 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         </div>
     </div>
 
-    <!-- Admin -->
     <div class="tab-content" id="admin-tab" style="display:none;">
         <div class="card">
             <h2>Admin Controls</h2>
@@ -103,19 +94,19 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 </main>
 
 <script>
-// --- Tab switching ---
+// --- Tabs ---
 const tabs = document.querySelectorAll('.tab');
 const tabContents = document.querySelectorAll('.tab-content');
-tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
+tabs.forEach(tab=>{
+    tab.addEventListener('click',()=>{
+        tabs.forEach(t=>t.classList.remove('active'));
         tab.classList.add('active');
-        tabContents.forEach(c => c.style.display='none');
+        tabContents.forEach(c=>c.style.display='none');
         document.getElementById(tab.dataset.tab+'-tab').style.display='block';
     });
 });
 
-// --- Account and persistence ---
+// --- Account ---
 let account = {name:"Erick", total:100, available:0};
 if(localStorage.getItem('account')) account = JSON.parse(localStorage.getItem('account'));
 const totalSpan = document.getElementById('total-balance');
@@ -131,54 +122,26 @@ updateAccountUI();
 // --- Players ---
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 const voteSelects = [document.getElementById('vote1'),document.getElementById('vote2'),document.getElementById('vote3')];
-voteSelects.forEach(s=>{
-    players.forEach(p=>{ let opt=document.createElement('option'); opt.value=p; opt.textContent=p; s.appendChild(opt); });
-});
+voteSelects.forEach(s=>{ players.forEach(p=>{ let opt=document.createElement('option'); opt.value=p; opt.textContent=p; s.appendChild(opt); }); });
 
 // --- Bets ---
 const props = {
     "Erick":[{name:"Erick scores", odds:4},{name:"Erick assist", odds:3},{name:"Erick anything", odds:2}],
-    "Yansy":[{name:"Yansy scores", odds:3},{name:"Yansy assist", odds:2}],
-    // add other players here
+    "Yansy":[{name:"Yansy scores", odds:3},{name:"Yansy assist", odds:2}]
 };
 let bets = JSON.parse(localStorage.getItem('bets')) || [];
 const playerSelect = document.getElementById('player-select');
 const propsContainer = document.getElementById('props-container');
+players.forEach(p=>{ let opt=document.createElement('option'); opt.value=p; opt.textContent=p; playerSelect.appendChild(opt); });
 
-players.forEach(p=>{
-    let opt=document.createElement('option'); opt.value=p; opt.textContent=p; playerSelect.appendChild(opt);
-});
-
-playerSelect.addEventListener('change', ()=>{
-    const player = playerSelect.value;
-    propsContainer.innerHTML="";
-        propsContainer.innerHTML="";
-    if(!props[player]) return;
-    props[player].forEach((propObj, index)=>{
-        const div = document.createElement('div');
-        div.className = 'prop';
-        const label = document.createElement('span');
-        label.textContent = `${propObj.name} (x${propObj.odds})`;
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.min = 0;
-        input.max = 10;
-        input.value = 0;
-        input.dataset.odds = propObj.odds;
-        div.appendChild(label);
-        div.appendChild(input);
-        propsContainer.appendChild(div);
-    });
-});
-
-// --- Admin Controls ---
+// --- Match Control ---
 let matchActive = false;
 const startBtn = document.getElementById('start-match');
 const endBtn = document.getElementById('end-match');
-startBtn.addEventListener('click', ()=>{
+startBtn.addEventListener('click',()=>{
     if(matchActive) return;
     matchActive = true;
-    account.available = Math.min(10, account.total); // set available per match
+    account.available = Math.min(10, account.total);
     updateAccountUI();
     voteSelects.forEach(s=>s.disabled=false);
     document.getElementById('submit-votes').disabled=false;
@@ -187,13 +150,12 @@ startBtn.addEventListener('click', ()=>{
     startBtn.disabled=true;
     endBtn.disabled=false;
 });
-
-endBtn.addEventListener('click', ()=>{
+endBtn.addEventListener('click',()=>{
     if(!matchActive) return;
     matchActive = false;
-    // resolve bets - in real usage, admin would mark yes/no for each
+    // resolve bets
     bets.forEach(b=>{
-        if(b.result==='win') account.total += b.amount * b.odds;
+        if(b.result==='hit') account.total += b.amount * b.odds;
         else account.total -= b.amount;
     });
     account.available = 0;
@@ -208,24 +170,48 @@ endBtn.addEventListener('click', ()=>{
     endBtn.disabled=true;
 });
 
-// --- Submit Votes ---
+// --- Voting ---
 document.getElementById('submit-votes').addEventListener('click', ()=>{
     const selections = voteSelects.map(s=>s.value);
+    // Prevent duplicate votes
     if(new Set(selections).size !== selections.length){
         alert("Cannot vote for the same player more than once!");
         return;
     }
-    // assign points: 1st=5,2nd=3,3rd=2
+    // Assign points: 1st=5, 2nd=3, 3rd=2
     const points = [5,3,2];
+    let score = JSON.parse(localStorage.getItem('mvpScores')) || {};
     selections.forEach((p,i)=>{
-        let score = JSON.parse(localStorage.getItem('mvpScores')) || {};
         score[p] = (score[p]||0)+points[i];
-        localStorage.setItem('mvpScores', JSON.stringify(score));
     });
-    alert("Votes submitted!");
+    localStorage.setItem('mvpScores', JSON.stringify(score));
+    document.getElementById('vote-section').style.display='none';
+    document.getElementById('vote-thanks').style.display='block';
+    updateLeaderboards();
 });
 
-// --- Submit Bets ---
+// --- Betting ---
+playerSelect.addEventListener('change', ()=>{
+    const selectedPlayer = playerSelect.value;
+    propsContainer.innerHTML="";
+    if(!props[selectedPlayer]) return;
+    props[selectedPlayer].forEach(p=>{
+        const div = document.createElement('div');
+        div.className='prop';
+        const label = document.createElement('span');
+        label.textContent=`${p.name} (x${p.odds})`;
+        const input = document.createElement('input');
+        input.type='number';
+        input.min=0;
+        input.max=10;
+        input.value=0;
+        input.dataset.odds=p.odds;
+        div.appendChild(label);
+        div.appendChild(input);
+        propsContainer.appendChild(div);
+    });
+});
+
 document.getElementById('submit-bets').addEventListener('click', ()=>{
     const selectedPlayer = playerSelect.value;
     const inputs = propsContainer.querySelectorAll('input');
@@ -239,8 +225,71 @@ document.getElementById('submit-bets').addEventListener('click', ()=>{
     localStorage.setItem('bets', JSON.stringify(bets));
     updateAccountUI();
     alert("Bets placed!");
+    renderAdminResolve();
 });
-</script>
 
+// --- Admin Resolve Bets ---
+function renderAdminResolve(){
+    const container = document.getElementById('resolve-bets');
+    container.innerHTML = "";
+    if(!bets.length) return;
+    bets.forEach((b,i)=>{
+        const div = document.createElement('div');
+        div.className='card';
+        div.innerHTML=`<strong>${b.account}</strong> bet ${b.amount} on ${b.prop} (x${b.odds})`;
+        const hitBtn = document.createElement('button');
+        hitBtn.textContent='Hit';
+        hitBtn.addEventListener('click', ()=>{
+            b.result='hit';
+            updateLeaderboards();
+            renderAdminResolve();
+        });
+        const missBtn = document.createElement('button');
+        missBtn.textContent='Miss';
+        missBtn.addEventListener('click', ()=>{
+            b.result='miss';
+            updateLeaderboards();
+            renderAdminResolve();
+        });
+        div.appendChild(hitBtn);
+        div.appendChild(missBtn);
+        container.appendChild(div);
+    });
+}
+
+// --- Leaderboards ---
+function updateLeaderboards(){
+    const mvpScores = JSON.parse(localStorage.getItem('mvpScores')) || {};
+    const mvpArray = Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]);
+    const tbodyMVP = document.querySelector('#mvp-leaderboard tbody');
+    tbodyMVP.innerHTML="";
+    mvpArray.forEach(([name,pts],i)=>{
+        const tr = document.createElement('tr');
+        let medal="";
+        if(i===0) medal="🥇";
+        else if(i===1) medal="🥈";
+        else if(i===2) medal="🥉";
+        tr.innerHTML=`<td>${medal}</td><td>${name}</td><td>${pts}</td>`;
+        tbodyMVP.appendChild(tr);
+    });
+
+    const coinArray = [account]; // for now only Erick
+    coinArray.sort((a,b)=>b.total-a.total);
+    const tbodyCoin = document.querySelector('#coin-leaderboard tbody');
+    tbodyCoin.innerHTML="";
+    coinArray.forEach((acc,i)=>{
+        let medal="";
+        if(i===0) medal="🥇";
+        else if(i===1) medal="🥈";
+        else if(i===2) medal="🥉";
+        tr = document.createElement('tr');
+        tr.innerHTML=`<td>${medal}</td><td>${acc.name}</td><td>${acc.total}</td>`;
+        tbodyCoin.appendChild(tr);
+    });
+}
+
+updateLeaderboards();
+</script>
 </body>
 </html>
+    
