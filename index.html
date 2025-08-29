@@ -1,56 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KickCoins - Coming Soon</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KickCoins</title>
   <style>
     body {
+      font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #ffffff, #2e8b57);
-      color: #222;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+      background: #ffffff;
+      color: #1a1a1a;
       text-align: center;
     }
-    h1 {
-      font-size: 3em;
-      margin-bottom: 0.5em;
+    header {
+      background: #007f3f;
+      color: white;
+      padding: 20px;
     }
-    p {
-      font-size: 1.2em;
-      max-width: 500px;
+    header h1 {
+      margin: 0;
+      font-size: 2.2em;
     }
-    .loader {
-      margin-top: 2em;
-      border: 8px solid #f3f3f3;
-      border-top: 8px solid #2e8b57;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      animation: spin 1s linear infinite;
+    nav {
+      margin-top: 10px;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    nav a {
+      margin: 0 15px;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    section {
+      padding: 50px 20px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    h2 {
+      color: #007f3f;
     }
     footer {
-      position: absolute;
-      bottom: 10px;
+      background: #f3f3f3;
+      padding: 20px;
       font-size: 0.9em;
       color: #555;
     }
   </style>
 </head>
 <body>
-  <h1>⚽ KickCoins</h1>
-  <p>Our fantasy betting and MVP voting platform is under construction.<br />Check back soon!</p>
-  <div class="loader"></div>
-  <footer>© 2025 KickCoins</footer>
+
+  <header>
+    <h1>⚽ KickCoins</h1>
+    <p>Fantasy Betting & MVP Voting for Edge of the Box FC</p>
+    <nav>
+      <a href="#betting">Betting</a>
+      <a href="#voting">MVP Voting</a>
+      <a href="#roster">Roster</a>
+      <a href="#leaderboard">Leaderboard</a>
+      <a href="#rules">Rules</a>
+    </nav>
+  </header>
+
+  <section id="betting">
+    <h2>Fantasy Betting</h2>
+    <p>Coming soon: Place bets with KickCoins on our Sunday league matches!</p>
+  </section>
+
+  <section id="voting">
+    <h2>MVP Voting</h2>
+    <p>Vote for the top 3 players after each game. Points add up for the Ballon d’Or!</p>
+  </section>
+
+  <section id="roster">
+    <h2>Team Roster</h2>
+    <p>Player list will go here.</p>
+  </section>
+
+  <section id="leaderboard">
+    <h2>Leaderboard</h2>
+    <p>Live standings for bets and MVP voting will appear here.</p>
+  </section>
+
+  <section id="rules">
+    <h2>Rules</h2>
+    <p>Simple breakdown of how betting and MVP voting works.</p>
+  </section>
+
+  <footer>
+    <p>© 2025 KickCoins — Built for Edge of the Box FC 🍀</p>
+  </footer>
+
 </body>
 </html>
