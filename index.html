@@ -4,193 +4,209 @@
   <meta charset="UTF-8">
   <title>Edge Book</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#111; color:#eee; margin:0; padding:0; }
-    header { background:#000; padding:10px; text-align:center; }
-    header h1 { margin:0; color:teal; }
-    .hidden { display:none; }
-    .container { padding:20px; }
-    .tabs button { margin:5px; padding:10px; background:teal; border:none; color:#fff; cursor:pointer; }
-    .active { background:#333; }
-    input, select { margin:5px; padding:5px; }
-    .odds { padding:5px; border-radius:5px; margin:3px; display:inline-block; }
-    .green { background:green; }
-    .yellow { background:goldenrod; }
-    .orange { background:darkorange; }
-    .red { background:crimson; }
-    #leaderboard, #mvpboard { margin-top:10px; }
+    body { font-family: Arial, sans-serif; background: #0a0f0f; color: #fff; text-align: center; }
+    .hidden { display: none; }
+    .container { max-width: 700px; margin: auto; padding: 20px; }
+    input, button, select { margin: 5px; padding: 8px; }
+    .balance-box { background: #111; padding: 10px; margin: 10px 0; border-radius: 8px; }
+    .leaderboard, .mvp-board { background: #111; padding: 10px; border-radius: 8px; margin: 10px 0; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>⚽ Edge Book</h1>
-    <div id="userStatus"></div>
-  </header>
+  <div class="container">
+    <h1>Edge Book</h1>
 
-  <div id="authSection" class="container">
-    <h2>Login</h2>
-    <input id="loginUser" placeholder="Username"><br>
-    <input id="loginPass" type="password" placeholder="Password"><br>
-    <button onclick="login()">Login</button>
-    <h2>Create Account</h2>
-    <input id="newUser" placeholder="Username"><br>
-    <input id="newPass" type="password" placeholder="Password"><br>
-    <button onclick="createAccount()">Create</button>
-  </div>
+    <!-- Login/Register -->
+    <div id="authSection">
+      <h2>Login / Register</h2>
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <br>
+      <button onclick="login()">Login</button>
+      <button onclick="register()">Register</button>
+    </div>
 
-  <div id="appSection" class="hidden">
-    <div class="tabs">
-      <button onclick="showTab('betting')">Betting</button>
-      <button onclick="showTab('mvp')">MVP Vote</button>
-      <button onclick="showTab('leader')">Leaderboards</button>
-      <button id="adminTab" class="hidden" onclick="showTab('admin')">Admin</button>
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden">
+      <h2 id="welcome"></h2>
       <button onclick="logout()">Logout</button>
-    </div>
+      <div class="balance-box">
+        <p id="totalBalance"></p>
+        <p id="availableBalance"></p>
+      </div>
 
-    <div id="betting" class="tab hidden container">
-      <h2>Betting</h2>
-      <div id="betOptions"></div>
-      <div id="betPlaced"></div>
-    </div>
+      <!-- Admin Controls -->
+      <div id="adminPanel" class="hidden">
+        <h3>Admin Panel</h3>
+        <button id="startMatchBtn" onclick="startMatch()">Start Match</button>
+        <button id="endMatchBtn" onclick="endMatch()" disabled>End Match</button>
+        <div id="resolveSection"></div>
+      </div>
 
-    <div id="mvp" class="tab hidden container">
-      <h2>MVP Voting</h2>
-      <select id="mvp1"></select>
-      <select id="mvp2"></select>
-      <select id="mvp3"></select><br>
-      <button onclick="submitMVP()">Submit Vote</button>
-      <div id="mvpThanks"></div>
-    </div>
+      <!-- Betting -->
+      <div id="bettingSection" class="hidden">
+        <h3>Place Bets</h3>
+        <select id="betOption">
+          <option value="Erick">Erick to Score</option>
+          <option value="Yansy">Yansy to Score</option>
+          <option value="Bernie">Bernie to Score</option>
+        </select>
+        <input type="number" id="betAmount" placeholder="Amount" min="1" max="10">
+        <button onclick="placeBet()">Bet</button>
+        <div id="betList"></div>
+      </div>
 
-    <div id="leader" class="tab hidden container">
-      <h2>Coin Leaderboard</h2>
-      <div id="leaderboard"></div>
-      <h2>MVP Leaderboard</h2>
-      <div id="mvpboard"></div>
-    </div>
+      <!-- MVP Voting -->
+      <div id="mvpSection" class="hidden">
+        <h3>MVP Voting</h3>
+        <select id="mvp1"></select>
+        <select id="mvp2"></select>
+        <select id="mvp3"></select>
+        <button onclick="submitVote()">Submit Vote</button>
+        <p id="voteMsg"></p>
+      </div>
 
-    <div id="admin" class="tab hidden container">
-      <h2>Admin Panel</h2>
-      <button id="startBtn" onclick="startMatch()">Start Match</button>
-      <button id="endBtn" onclick="endMatch()" disabled>End Match</button>
-      <div id="resolveBets"></div>
+      <!-- Leaderboards -->
+      <div class="leaderboard">
+        <h3>Coin Leaderboard</h3>
+        <ul id="coinBoard"></ul>
+      </div>
+      <div class="mvp-board">
+        <h3>MVP Leaderboard</h3>
+        <ul id="mvpBoard"></ul>
+      </div>
     </div>
   </div>
 
-<script>
-let users = JSON.parse(localStorage.getItem('users')||'{}');
-let currentUser = null;
-let matchActive = false;
-let bets = [];
-let votes = {};
-const roster = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
+  <script>
+    let users = JSON.parse(localStorage.getItem("users")) || {};
+    let currentUser = null;
+    let matchActive = false;
+    let mvpVotes = {};
 
-function save() { localStorage.setItem('users', JSON.stringify(users)); }
-function updateHeader() {
-  if(!currentUser) return;
-  let u=users[currentUser];
-  document.getElementById('userStatus').innerText =
-   `${currentUser} | 💰Total: ${u.total} | 💸Avail: ${u.avail}`;
-}
-function login() {
-  let u=document.getElementById('loginUser').value.trim();
-  let p=document.getElementById('loginPass').value;
-  if(u==="admin" && p==="edgebook2025"){ currentUser="admin"; }
-  else if(users[u] && users[u].pass===p){ currentUser=u; }
-  else { alert("Invalid login"); return; }
-  document.getElementById('authSection').classList.add('hidden');
-  document.getElementById('appSection').classList.remove('hidden');
-  if(currentUser==="admin") document.getElementById('adminTab').classList.remove('hidden');
-  else document.getElementById('adminTab').classList.add('hidden');
-  updateHeader(); showTab('leader'); refreshBoards();
-}
-function createAccount() {
-  let u=document.getElementById('newUser').value.trim();
-  let p=document.getElementById('newPass').value;
-  if(users[u]){alert("User exists");return;}
-  users[u]={pass:p,total:100,avail:0,mvp:0}; save(); alert("Account created!");
-}
-function logout(){
-  currentUser=null; document.getElementById('authSection').classList.remove('hidden');
-  document.getElementById('appSection').classList.add('hidden');
-}
-function showTab(id){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
-}
-function startMatch(){
-  if(matchActive){return;}
-  matchActive=true;
-  document.getElementById('startBtn').disabled=true;
-  document.getElementById('endBtn').disabled=false;
-  bets=[]; votes={};
-  for(let u in users){
-    users[u].avail=10;
-    users[u].total-=10;
-  }
-  save(); updateHeader(); setupBetOptions(); setupMVPOptions();
-}
-function setupBetOptions(){
-  let div=document.getElementById('betOptions');
-  div.innerHTML="";
-  roster.forEach(player=>{
-    let odds=Math.floor(Math.random()*4)+1;
-    let color= odds===1?"green":odds===2?"yellow":odds===3?"orange":"red";
-    div.innerHTML+=`<div class="odds ${color}">${player} to score (x${odds})
-    <button onclick="placeBet('${player}',${odds})">Bet</button></div>`;
-  });
-}
-function placeBet(player,odds){
-  if(!matchActive){alert("Match not active");return;}
-  let u=users[currentUser];
-  if(u.avail<=0){alert("No available coins");return;}
-  u.avail--; bets.push({user:currentUser,player,odds}); save(); updateHeader();
-}
-function setupMVPOptions(){
-  let s1=document.getElementById('mvp1'), s2=document.getElementById('mvp2'), s3=document.getElementById('mvp3');
-  [s1,s2,s3].forEach(s=>{s.innerHTML=roster.map(r=>`<option>${r}</option>`).join("");});
-  document.getElementById('mvpThanks').innerHTML="";
-}
-function submitMVP(){
-  if(!matchActive){alert("Match not active");return;}
-  if(votes[currentUser]){alert("Already voted");return;}
-  let p1=document.getElementById('mvp1').value;
-  let p2=document.getElementById('mvp2').value;
-  let p3=document.getElementById('mvp3').value;
-  if(p1===p2||p1===p3||p2===p3){alert("Cannot pick same player twice");return;}
-  votes[currentUser]=[p1,p2,p3];
-  document.getElementById('mvpThanks').innerText="Thanks for voting!";
-}
-function endMatch(){
-  if(!matchActive)return;
-  matchActive=false;
-  document.getElementById('startBtn').disabled=false;
-  document.getElementById('endBtn').disabled=true;
-  let div=document.getElementById('resolveBets'); div.innerHTML="";
-  bets.forEach((b,i)=>{
-    div.innerHTML+=`<div>${b.user} bet on ${b.player} (x${b.odds})
-    <button onclick="resolveBet(${i},true)">Hit</button>
-    <button onclick="resolveBet(${i},false)">Miss</button></div>`;
-  });
-  // Apply MVP points
-  for(let u in votes){
-    let [a,b,c]=votes[u];
-    if(users[a])users[a].mvp+=5;
-    if(users[b])users[b].mvp+=3;
-    if(users[c])users[c].mvp+=2;
-  }
-  save(); refreshBoards();
-}
-function resolveBet(idx,hit){
-  let b=bets[idx]; if(!b)return;
-  if(hit){ users[b.user].total += b.odds; }
-  save(); refreshBoards(); updateHeader();
-}
-function refreshBoards(){
-  let l=Object.entries(users).sort((a,b)=>b[1].total-a[1].total);
-  document.getElementById('leaderboard').innerHTML=l.map(([u,d])=>`${u}: ${d.total}`).join("<br>");
-  let m=Object.entries(users).sort((a,b)=>b[1].mvp-a[1].mvp);
-  document.getElementById('mvpboard').innerHTML=m.map(([u,d])=>`${u}: ${d.mvp}`).join("<br>");
-}
-</script>
+    const adminCreds = { username: "admin", password: "edgebook2025" };
+
+    function saveUsers() { localStorage.setItem("users", JSON.stringify(users)); }
+
+    function login() {
+      const u = document.getElementById("username").value;
+      const p = document.getElementById("password").value;
+      if (u === adminCreds.username && p === adminCreds.password) {
+        currentUser = u;
+        showDashboard(true);
+        return;
+      }
+      if (users[u] && users[u].password === p) {
+        currentUser = u;
+        showDashboard(false);
+      } else alert("Invalid credentials");
+    }
+
+    function register() {
+      const u = document.getElementById("username").value;
+      const p = document.getElementById("password").value;
+      if (users[u]) return alert("User exists");
+      users[u] = { password: p, total: 100, available: 0 };
+      saveUsers();
+      alert("Registered. Please login.");
+    }
+
+    function logout() {
+      currentUser = null;
+      document.getElementById("dashboard").classList.add("hidden");
+      document.getElementById("authSection").classList.remove("hidden");
+    }
+
+    function showDashboard(isAdmin) {
+      document.getElementById("authSection").classList.add("hidden");
+      document.getElementById("dashboard").classList.remove("hidden");
+      document.getElementById("welcome").innerText = "Welcome " + currentUser;
+      document.getElementById("adminPanel").classList.toggle("hidden", !isAdmin);
+      updateBalances();
+      updateLeaderboards();
+    }
+
+    function updateBalances() {
+      if (currentUser !== "admin") {
+        const u = users[currentUser];
+        document.getElementById("totalBalance").innerText = "Total Balance: " + u.total;
+        document.getElementById("availableBalance").innerText = "Available: " + u.available;
+      }
+    }
+
+    function startMatch() {
+      if (matchActive) return;
+      matchActive = true;
+      document.getElementById("startMatchBtn").disabled = true;
+      document.getElementById("endMatchBtn").disabled = false;
+      document.getElementById("bettingSection").classList.remove("hidden");
+      document.getElementById("mvpSection").classList.remove("hidden");
+      for (let u in users) { users[u].available = 10; }
+      saveUsers();
+      updateBalances();
+    }
+
+    function endMatch() {
+      if (!matchActive) return;
+      matchActive = false;
+      document.getElementById("startMatchBtn").disabled = false;
+      document.getElementById("endMatchBtn").disabled = true;
+      document.getElementById("bettingSection").classList.add("hidden");
+      document.getElementById("mvpSection").classList.add("hidden");
+      updateLeaderboards();
+      mvpVotes = {};
+      saveUsers();
+    }
+
+    function placeBet() {
+      if (!matchActive) return alert("Match not active");
+      const amt = parseInt(document.getElementById("betAmount").value);
+      const u = users[currentUser];
+      if (amt > u.available) return alert("Not enough available");
+      u.available -= amt;
+      saveUsers();
+      updateBalances();
+      document.getElementById("betList").innerText += currentUser + " bet " + amt + " on " + document.getElementById("betOption").value + "\n";
+    }
+
+    function submitVote() {
+      if (!matchActive) return;
+      const p1 = document.getElementById("mvp1").value;
+      const p2 = document.getElementById("mvp2").value;
+      const p3 = document.getElementById("mvp3").value;
+      if (new Set([p1, p2, p3]).size < 3) return alert("Cannot vote same player twice");
+      if (mvpVotes[currentUser]) return alert("Already voted");
+      mvpVotes[currentUser] = {1:p1,2:p2,3:p3};
+      tallyMVP();
+      document.getElementById("voteMsg").innerText = "Thanks for voting!";
+    }
+
+    function tallyMVP() {
+      let scores = {};
+      for (let v in mvpVotes) {
+        let pick = mvpVotes[v];
+        scores[pick[1]] = (scores[pick[1]]||0)+5;
+        scores[pick[2]] = (scores[pick[2]]||0)+3;
+        scores[pick[3]] = (scores[pick[3]]||0)+2;
+      }
+      let sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+      document.getElementById("mvpBoard").innerHTML = sorted.map(s=>"<li>"+s[0]+": "+s[1]+"</li>").join("");
+    }
+
+    function updateLeaderboards() {
+      let sorted = Object.entries(users).sort((a,b)=>b[1].total - a[1].total);
+      document.getElementById("coinBoard").innerHTML = sorted.map(s=>"<li>"+s[0]+": "+s[1].total+"</li>").join("");
+    }
+
+    // Populate MVP dropdowns
+    window.onload = () => {
+      ["mvp1","mvp2","mvp3"].forEach(id=>{
+        let sel=document.getElementById(id);
+        ["Erick","Yansy","Bernie"].forEach(p=>{
+          let o=document.createElement("option"); o.value=p; o.text=p; sel.add(o);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
