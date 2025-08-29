@@ -15,11 +15,13 @@ main { padding:20px; }
 .card { background-color:#1f1f1f; padding:15px; margin:10px 0; border-radius:8px; }
 .prop { display:flex; justify-content:space-between; align-items:center; margin:10px 0; }
 .prop input[type="number"] { width:50px; margin-left:10px; }
+.select-payout { margin-left:10px; }
 select { padding:5px; }
-button { padding:5px 10px; cursor:pointer; border:none; border-radius:5px; }
+button { padding:5px 10px; cursor:pointer; border:none; border-radius:5px;}
 table { width:100%; border-collapse:collapse; }
 th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 #login-card { max-width:400px; margin:50px auto; }
+.green{color:#00ff00;} .yellow{color:#ffff00;} .orange{color:#ff9900;} .red{color:#ff0000;}
 </style>
 </head>
 <body>
@@ -42,8 +44,8 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 <div class="tabs">
     <div class="tab active" data-tab="vote">MVP Voting</div>
     <div class="tab" data-tab="bet">Betting</div>
-    <div class="tab" data-tab="leaderboard">Leaderboards</div>
     <div class="tab" data-tab="history">Bet History</div>
+    <div class="tab" data-tab="leaderboard">Leaderboards</div>
     <div class="tab" data-tab="admin">Admin</div>
 </div>
 
@@ -74,30 +76,20 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
     </div>
 </div>
 
-<!-- Leaderboards -->
-<div class="tab-content" id="leaderboard-tab" style="display:none;">
-    <div class="card">
-        <h2>MVP Leaderboard</h2>
-        <table id="mvp-leaderboard">
-            <thead><tr><th>Place</th><th>Player</th><th>Points</th></tr></thead>
-            <tbody></tbody>
-        </table>
-    </div>
-    <div class="card">
-        <h2>Coin Leaderboard</h2>
-        <table id="coin-leaderboard">
-            <thead><tr><th>Place</th><th>Player</th><th>Coins</th></tr></thead>
-            <tbody></tbody>
-        </table>
-    </div>
-</div>
-
 <!-- Bet History -->
 <div class="tab-content" id="history-tab" style="display:none;">
     <div class="card">
         <h2>Bet History</h2>
-        <table id="bet-history-table">
-            <thead><tr><th>Match</th><th>Total Bet</th><th>Total Won</th></tr></thead>
+        <div id="bet-history-container"></div>
+    </div>
+</div>
+
+<!-- Leaderboards -->
+<div class="tab-content" id="leaderboard-tab" style="display:none;">
+    <div class="card">
+        <h2>Coins Leaderboard</h2>
+        <table id="coin-leaderboard">
+            <thead><tr><th>Place</th><th>Player</th><th>Coins</th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
@@ -109,7 +101,6 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         <h2>Admin Controls</h2>
         <button id="start-match">Start Match</button>
         <button id="end-match">End Match</button>
-        <div id="resolve-bets"></div>
     </div>
 </div>
 </main>
@@ -119,13 +110,13 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 const propsTemplate = ["Assist","Score","Anything"];
 let users = {
-    "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, betHistory:[] },
-    "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, betHistory:[] },
-    "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, betHistory:[] }
+    "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], betHistory:[], mvpPoints:0 },
+    "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], betHistory:[], mvpPoints:0 },
+    "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], betHistory:[], mvpPoints:0 }
 };
 let currentUser = null;
 let matchActive = false;
-let matchCounter = 0;
+let matchNumber = 1;
 
 /* ----- LOGIN / CREATE ----- */
 function showLogin(show=true){
@@ -137,14 +128,15 @@ document.getElementById('login-btn').addEventListener('click',()=>{
     const user = document.getElementById('login-username').value;
     const pass = document.getElementById('login-password').value;
     if(users[user] && users[user].password===pass){
-        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateBetHistory();
+        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards();
+        alert("Logged in!");
     }else{ alert("Invalid credentials"); }
 });
 document.getElementById('create-btn').addEventListener('click',()=>{
     const user = document.getElementById('login-username').value;
     const pass = document.getElementById('login-password').value;
     if(users[user]){ alert("User exists"); return; }
-    users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0, betHistory:[]};
+    users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],betHistory:[],mvpPoints:0};
     alert("Account created! You can now login.");
 });
 document.getElementById('logout-btn').addEventListener('click',()=>{
@@ -158,8 +150,8 @@ document.querySelectorAll('.tab').forEach(tab=>{
         tab.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
         document.getElementById(tab.dataset.tab+'-tab').style.display='block';
-        updateUI(); 
-        if(tab.dataset.tab==='history') updateBetHistory();
+        updateUI();
+        if(tab.dataset.tab==="history") displayBetHistory();
     });
 });
 
@@ -167,9 +159,10 @@ document.querySelectorAll('.tab').forEach(tab=>{
 function updateUI(){
     if(!currentUser) return;
     let acc = users[currentUser];
-    let html = `${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
-    if(currentUser!=="admin") html+=` | MVP Points: ${acc.mvpPoints}`;
-    document.getElementById('account-info').innerHTML=html;
+    let sortedCoins = Object.entries(users).filter(u=>!u[1].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
+    let rank = sortedCoins.findIndex(u=>u[0]===currentUser)+1;
+    let medal = rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":"🪨";
+    document.getElementById('account-info').innerHTML=`${currentUser} ${medal} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
 }
 
 /* ----- MVP VOTING ----- */
@@ -199,7 +192,7 @@ function populatePlayers(){
     let sel = document.getElementById('player-select');
     sel.innerHTML="";
     players.forEach(p=>{
-        let opt = document.createElement("option"); opt.value=p; opt.text=p;
+        let opt=document.createElement("option"); opt.value=p; opt.text=p;
         sel.appendChild(opt);
     });
     sel.addEventListener('change', populateProps);
@@ -208,13 +201,18 @@ function populateProps(){
     let container = document.getElementById('props-container');
     container.innerHTML="";
     let player = document.getElementById('player-select').value;
+    const odds = 4;
     propsTemplate.forEach(prop=>{
         let card = document.createElement("div"); card.className="prop";
-        let label = document.createElement("span"); label.textContent=`${prop} (4x)`;
-        label.className="green";
+        let label = document.createElement("span"); label.textContent=`${prop} (Odds: ${odds}x)`;
         let input = document.createElement("input"); input.type="number"; input.min=0; input.max=users[currentUser].availableCoins;
-        input.oninput = function(){ if(this.value>users[currentUser].availableCoins) this.value=users[currentUser].availableCoins; }
-        card.appendChild(label); card.appendChild(input); container.appendChild(card);
+        let payoutPreview = document.createElement("span"); payoutPreview.className="select-payout"; payoutPreview.textContent="";
+        input.oninput=function(){
+            if(this.value>users[currentUser].availableCoins) this.value=users[currentUser].availableCoins;
+            payoutPreview.textContent=this.value>0?`Payout: ${this.value*odds}`:"";
+        };
+        card.appendChild(label); card.appendChild(input); card.appendChild(payoutPreview);
+        container.appendChild(card);
     });
 }
 
@@ -236,21 +234,40 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
     updateUI(); alert("Bets placed!");
 });
 
+/* ----- BET HISTORY DISPLAY ----- */
+function displayBetHistory(){
+    if(!currentUser) return;
+    const container=document.getElementById('bet-history-container');
+    container.innerHTML="";
+    users[currentUser].betHistory.forEach(match=>{
+        const matchDiv=document.createElement("div"); matchDiv.className="card";
+        matchDiv.innerHTML=`<h3>Match ${match.matchNumber}</h3>`;
+        match.bets.forEach(b=>{
+            let p=document.createElement("p");
+            const payout = b.won?b.amount*b.odds:0;
+            let ratio = payout>0?Math.min(payout/50,1):0; // for gradient scaling
+            let r=Math.floor(255*(1-ratio)), g=Math.floor(255*ratio), color=`rgb(${r},${g},0)`;
+            p.textContent=`${b.player} - ${b.prop} - Bet: ${b.amount} - Won: ${b.won? "Yes" : "No"} - Payout: ${payout}`;
+            p.style.color=color;
+            matchDiv.appendChild(p);
+        });
+        container.appendChild(matchDiv);
+    });
+}
+
 /* ----- ADMIN CONTROLS ----- */
 document.getElementById('start-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
     if(matchActive){ alert("Match already started"); return; }
-    matchActive=true; matchCounter++;
+    matchActive=true;
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
             let acc=users[u];
             let max=Math.min(10, acc.totalCoins);
             acc.availableCoins=max; acc.totalCoins-=max;
-            // Initialize bet history entry for this match
-            acc.betHistory.push({match:matchCounter,totalBet:0,totalWon:0});
         }
     });
-    updateUI(); alert("Match started!");
+    updateUI(); alert(`Match ${matchNumber} started!`);
 });
 
 document.getElementById('end-match').addEventListener('click',()=>{
@@ -258,77 +275,36 @@ document.getElementById('end-match').addEventListener('click',()=>{
     if(!matchActive){ alert("Match not started"); return; }
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
-            let acc = users[u];
-            let betTotal=0, winTotal=0;
-            acc.bets.forEach(b=>{
+            let matchBets=[];
+            users[u].bets.forEach(b=>{
                 if(!b.resolved){
-                    let res = confirm(`Did ${b.player} succeed in ${b.prop}? (OK=Yes, Cancel=No)`);
-                    if(res){ b.won=true; let win=b.amount*b.odds; acc.totalCoins+=win; winTotal+=win; }
-                    b.resolved=true; betTotal+=b.amount;
+                    let res = confirm(`Did ${b.player} succeed in ${b.prop}? (OK = Yes, Cancel = No)`);
+                    if(res){ b.won=true; users[u].totalCoins+=b.amount*b.odds; }
+                    b.resolved=true;
+                    matchBets.push({...b});
                 }
             });
-            acc.availableCoins=0;
-            // Update bet history for this match
-            let hist=acc.betHistory.find(h=>h.match===matchCounter);
-            if(hist){ hist.totalBet=betTotal; hist.totalWon=winTotal; }
+            if(matchBets.length>0) users[u].betHistory.push({matchNumber, bets:matchBets});
+            users[u].availableCoins=0; // reset coins
+            users[u].bets=[]; // clear active bets
         }
     });
-    matchActive=false; updateUI(); updateLeaderboards(); updateBetHistory(); alert("Match ended! Bets resolved.");
+    matchActive=false; updateUI(); updateLeaderboards(); alert(`Match ${matchNumber} ended! Bets resolved.`);
+    matchNumber++;
 });
 
 /* ----- LEADERBOARDS ----- */
 function updateLeaderboards(){
-    // MVP
-    let mvpScores={}; players.forEach(p=>mvpScores[p]=0);
-    Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin){
-            let v=users[u].votes;
-            if(v["1st"]) mvpScores[v["1st"]]+=5;
-            if(v["2nd"]) mvpScores[v["2nd"]]+=3;
-            if(v["3rd"]) mvpScores[v["3rd"]]+=2;
-        }
-    });
-    let mvpSorted=Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]);
-    let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody');
-    tbody.innerHTML="";
-    mvpSorted.forEach((entry,i)=>{
-        let tr=document.createElement("tr");
-        tr.innerHTML=`<td>${i+1}</td><td>${entry[0]}</td><td>${entry[1]}</td>`;
-        tbody.appendChild(tr);
-    });
-
-    // Coins
-    let coinSorted=Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
+    // Coins leaderboard with medals
+    let coinSorted=Object.entries(users).filter(u=>!u[1].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
     let ct=document.getElementById('coin-leaderboard').querySelector('tbody');
     ct.innerHTML="";
     coinSorted.forEach((entry,i)=>{
+        let medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":"🪨";
         let tr=document.createElement("tr");
-        tr.innerHTML=`<td>${i+1}</td><td>${entry[0]}</td><td>${entry[1].totalCoins}</td>`;
+        tr.innerHTML=`<td>${i+1}</td><td>${entry[0]} ${medal}</td><td>${entry[1].totalCoins}</td>`;
         ct.appendChild(tr);
     });
-}
-
-/* ----- BET HISTORY ----- */
-function updateBetHistory(){
-    if(!currentUser || users[currentUser].isAdmin) return;
-    let tbody=document.getElementById('bet-history-table').querySelector('tbody');
-    tbody.innerHTML="";
-    let maxWin=0;
-    users[currentUser].betHistory.forEach(h=>{ if(h.totalWon>maxWin) maxWin=h.totalWon; });
-    users[currentUser].betHistory.forEach(h=>{
-        let tr=document.createElement("tr");
-        tr.innerHTML=`<td>${h.match}</td><td>${h.totalBet}</td><td>${h.totalWon}</td>`;
-        // Gradient coloring
-        let ratio = maxWin? (h.totalWon/maxWin):0;
-        tr.style.backgroundColor=ratioToColor(ratio);
-        tbody.appendChild(tr);
-    });
-}
-function ratioToColor(r){
-    if(r<=0) return "#ff0000"; // red
-    if(r>=1) return "#00ff00"; // green
-    if(r<0.5) return "#ff9900"; // orange
-    return "#ffff00"; // yellow
 }
 
 /* ----- INITIALIZE ----- */
