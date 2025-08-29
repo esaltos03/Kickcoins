@@ -65,7 +65,89 @@
     <p>Coming soon: Place bets with KickCoins on our Sunday league matches!</p>
   </section>
 
-  <section id="voting">
+  <<h2>MVP Voting</h2>
+<p>Vote for the top 3 players after each game.</p>
+
+<div id="voting-form">
+  <label for="player1">1st Place (5 pts):</label>
+  <select id="player1">
+    <option value="">Select Player</option>
+  </select>
+
+  <label for="player2">2nd Place (3 pts):</label>
+  <select id="player2">
+    <option value="">Select Player</option>
+  </select>
+
+  <label for="player3">3rd Place (2 pts):</label>
+  <select id="player3">
+    <option value="">Select Player</option>
+  </select>
+
+  <button id="submitVote">Submit Vote</button>
+</div>
+
+<h3>Current Leaderboard</h3>
+<ul id="leaderboard">
+</ul>
+
+<script>
+  // ======== Setup ========
+  const players = ['Erick', 'Yansy', 'Bernie', 'Erubial', 'Samir', 'Angel', 'Abel', 'Estress', 'Alan', 'Ace'];
+  const leaderboard = {};
+
+  // Initialize leaderboard points
+  players.forEach(player => leaderboard[player] = 0);
+
+  // Populate dropdowns
+  ['player1','player2','player3'].forEach(selectId => {
+    const select = document.getElementById(selectId);
+    players.forEach(player => {
+      const option = document.createElement('option');
+      option.value = player;
+      option.text = player;
+      select.add(option);
+    });
+  });
+
+  // ======== Voting Logic ========
+  document.getElementById('submitVote').addEventListener('click', () => {
+    const first = document.getElementById('player1').value;
+    const second = document.getElementById('player2').value;
+    const third = document.getElementById('player3').value;
+
+    if (!first || !second || !third) {
+      alert('Please select all three players.');
+      return;
+    }
+    if (new Set([first, second, third]).size !== 3) {
+      alert('Each player must be unique.');
+      return;
+    }
+
+    leaderboard[first] += 5;
+    leaderboard[second] += 3;
+    leaderboard[third] += 2;
+
+    updateLeaderboard();
+    alert('Vote submitted!');
+  });
+
+  function updateLeaderboard() {
+    const lb = document.getElementById('leaderboard');
+    lb.innerHTML = '';
+    // Sort by points descending
+    const sorted = Object.entries(leaderboard).sort((a,b) => b[1] - a[1]);
+    sorted.forEach(([player, pts]) => {
+      const li = document.createElement('li');
+      li.textContent = `${player}: ${pts} pts`;
+      lb.appendChild(li);
+    });
+  }
+
+  // Initial leaderboard display
+  updateLeaderboard();
+</script>>
     <h2>MVP Voting</h2>
     <p>Vote for the top 3 players after each game. Points add up for the Ballon d’Or!</p>
   </section>
