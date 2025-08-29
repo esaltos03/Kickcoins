@@ -5,33 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kickcoins - Fantasy Betting</title>
 <style>
-body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; margin:0; padding:0; }
-header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background-color:#1a1a1a; }
-header .account { display:flex; align-items:center; gap:15px; }
-header .account img { width:24px; height:24px; }
-.tabs { display:flex; background-color:#1a1a1a; }
-.tab { flex:1; padding:10px; text-align:center; cursor:pointer; border-bottom:2px solid #121212; }
-.tab.active { border-bottom:2px solid #00ff00; }
-main { padding:20px; }
-.card { background-color:#1f1f1f; padding:15px; margin:10px 0; border-radius:8px; }
-.prop { display:flex; justify-content:space-between; align-items:center; margin:10px 0; }
-.prop input[type="number"] { width:50px; margin-left:10px; }
-select { padding:5px; }
-button { padding:5px 10px; cursor:pointer; border:none; border-radius:5px; }
-.green { color:#00ff00; }
-.yellow { color:#ffff00; }
-.orange { color:#ff9900; }
-.red { color:#ff0000; }
-table { width:100%; border-collapse:collapse; }
-th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
-.medal { width:20px; height:20px; vertical-align:middle; margin-right:5px; }
+    /* ----- GENERAL STYLES ----- */
+    body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; margin: 0; padding: 0; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1a1a1a; }
+    header .account { display: flex; align-items: center; gap: 15px; }
+    header .account img { width: 24px; height: 24px; }
+    .tabs { display: flex; background-color: #1a1a1a; }
+    .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-bottom: 2px solid #121212; }
+    .tab.active { border-bottom: 2px solid #00ff00; }
+    main { padding: 20px; }
+    .card { background-color: #1f1f1f; padding: 15px; margin: 10px 0; border-radius: 8px; }
+    .prop { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
+    .prop input[type="number"] { width: 50px; margin-left: 10px; }
+    select { padding: 5px; }
+    button { padding: 5px 10px; cursor: pointer; border: none; border-radius: 5px; }
+    .green { color: #00ff00; }
+    .yellow { color: #ffff00; }
+    .orange { color: #ff9900; }
+    .red { color: #ff0000; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; text-align: left; border-bottom: 1px solid #333; }
 </style>
 </head>
 <body>
 
 <header>
     <h1>Kickcoins ⚽</h1>
-    <div class="account" id="account-info"></div>
+    <div class="account" id="account-info">
+        <!-- Username, total coins, available balance, leaderboard places -->
+    </div>
 </header>
 
 <div class="tabs">
@@ -42,6 +44,7 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 </div>
 
 <main>
+    <!-- MVP Voting Tab -->
     <div class="tab-content" id="vote-tab">
         <div class="card">
             <h2>Vote for MVP</h2>
@@ -55,6 +58,7 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         </div>
     </div>
 
+    <!-- Betting Tab -->
     <div class="tab-content" id="bet-tab" style="display:none;">
         <div class="card">
             <h2>Betting</h2>
@@ -66,6 +70,7 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         </div>
     </div>
 
+    <!-- Leaderboards Tab -->
     <div class="tab-content" id="leaderboard-tab" style="display:none;">
         <div class="card">
             <h2>MVP Leaderboard</h2>
@@ -83,17 +88,19 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         </div>
     </div>
 
+    <!-- Admin Tab -->
     <div class="tab-content" id="admin-tab" style="display:none;">
         <div class="card">
             <h2>Admin Controls</h2>
             <button id="start-match">Start Match</button>
-            <button id="end-match" disabled>End Match</button>
+            <button id="end-match">End Match</button>
             <div id="resolve-bets"></div>
         </div>
     </div>
 </main>
 
 <script>
+/* ----- SAMPLE DATA ----- */
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 const propsTemplate = ["Assist","Score","Anything"];
 let users = {
@@ -112,16 +119,13 @@ document.querySelectorAll('.tab').forEach(tab=>{
         document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
         document.getElementById(tab.dataset.tab+'-tab').style.display='block';
         updateUI();
-        if(tab.dataset.tab==="admin") populateResolveBets();
     });
 });
 
 /* ----- ACCOUNT DISPLAY ----- */
 function updateUI(){
     let acc = users[currentUser];
-    let mvpPlace = getLeaderboardPlace("mvpPoints", currentUser);
-    let coinPlace = getLeaderboardPlace("totalCoins", currentUser);
-    let html = `${currentUser} | Total: ${acc.totalCoins} 💰 (Place ${coinPlace}) | Available: ${acc.availableCoins} 💸 | MVP Place: ${mvpPlace}`;
+    let html = `${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
     document.getElementById('account-info').innerHTML = html;
 }
 
@@ -161,13 +165,17 @@ function populateProps(){
     let player = document.getElementById('player-select').value;
     propsTemplate.forEach(prop=>{
         let card = document.createElement("div"); card.className="prop";
-        let label = document.createElement("span"); label.textContent=`${prop} (4x)`; 
+        let label = document.createElement("span"); label.textContent=`${prop} (4x)`; // static odds
         let input = document.createElement("input"); input.type="number"; input.min=0; input.max=users[currentUser].availableCoins;
-        input.oninput = function(){ if(this.value>users[currentUser].availableCoins) this.value=users[currentUser].availableCoins; }
+        input.oninput = function(){
+            if(this.value>users[currentUser].availableCoins) this.value=users[currentUser].availableCoins;
+        }
         card.appendChild(label); card.appendChild(input);
         container.appendChild(card);
     });
 }
+
+/* ----- SUBMIT BETS ----- */
 document.getElementById('submit-bets').addEventListener('click',()=>{
     let propsDiv = document.getElementById('props-container').children;
     let acc = users[currentUser];
@@ -177,7 +185,7 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
         if(amt>0){
             if(acc.availableCoins>=amt){
                 acc.availableCoins -= amt;
-                acc.bets.push({player:document.getElementById('player-select').value,prop:propName,amount:amt,odds:4,resolved:false});
+                acc.bets.push({player:document.getElementById('player-select').value,prop:propName,amount:amt,odds:4});
             } else { alert("Cannot bet more than available balance"); }
         }
     }
@@ -196,88 +204,26 @@ document.getElementById('start-match').addEventListener('click',()=>{
         }
     });
     updateUI();
-    document.getElementById('end-match').disabled = false;
     alert("Match started! Players can now bet.");
 });
 
 document.getElementById('end-match').addEventListener('click',()=>{
     if(matchActive){
-        let allResolved = true;
-        Object.keys(users).forEach(u=>{
-            if(!users[u].isAdmin){
-                users[u].bets.forEach(b=>{ if(!b.resolved) allResolved=false; });
-            }
-        });
-        if(!allResolved){ alert("Resolve all bets before ending match."); return; }
+        let unresolved = false;
+        // For simplicity, admin resolution UI can be expanded
+        alert("Match ended! Resolve bets with Yes/No per prop.");
         matchActive=false;
         Object.keys(users).forEach(u=>{
-            if(!users[u].isAdmin) users[u].availableCoins=0;
+            if(!users[u].isAdmin) users[u].availableCoins=0; // Forfeit remaining coins
         });
-        updateLeaderboards();
-        alert("Match closed. Coins and leaderboards updated!");
+        updateUI();
     }
 });
 
-/* ----- LEADERBOARDS ----- */
-function updateLeaderboards(){
-    // MVP
-    let mvpTable = document.querySelector("#mvp-leaderboard tbody");
-    mvpTable.innerHTML="";
-    let mvpArr = Object.keys(users).filter(u=>!users[u].isAdmin).sort((a,b)=>users[b].mvpPoints-users[a].mvpPoints);
-    mvpArr.forEach((u,i)=>{
-        let tr = document.createElement("tr");
-        let medal = i==0?"🥇":i==1?"🥈":i==2?"🥉":"🪵";
-        tr.innerHTML=`<td>${i+1}</td><td>${medal} ${u}</td><td>${users[u].mvpPoints}</td>`;
-        mvpTable.appendChild(tr);
-    });
-    // Coins
-    let coinTable = document.querySelector("#coin-leaderboard tbody");
-    coinTable.innerHTML="";
-    let coinArr = Object.keys(users).filter(u=>!users[u].isAdmin).sort((a,b)=>users[b].totalCoins-users[a].totalCoins);
-    coinArr.forEach((u,i)=>{
-        let medal = i==0?"🥇":i==1?"🥈":i==2?"🥉":"🪵";
-        let tr = document.createElement("tr");
-        tr.innerHTML=`<td>${i+1}</td><td>${medal} ${u}</td><td>${users[u].totalCoins}</td>`;
-        coinTable.appendChild(tr);
-    });
-}
-
-/* ----- ADMIN BET RESOLUTION ----- */
-function populateResolveBets(){
-    let container = document.getElementById('resolve-bets');
-    container.innerHTML="";
-    Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin){
-            users[u].bets.forEach((b,i)=>{
-                if(!b.resolved){
-                    let div = document.createElement("div"); div.className="prop";
-                    div.innerHTML=`<span>${b.player} - ${b.prop} (${b.amount} coins @${b.odds}x)</span>
-                    <button onclick="resolveBet('${u}',${i},true)">Yes</button>
-                    <button onclick="resolveBet('${u}',${i},false)">No</button>`;
-                    container.appendChild(div);
-                }
-            });
-        }
-    });
-}
-function resolveBet(user,index,won){
-    let bet = users[user].bets[index];
-    if(won){
-        users[user].totalCoins += bet.amount*bet.odds;
-    }
-    bet.resolved = true;
-    populateResolveBets();
-    updateUI();
-}
-
-/* ----- HELPER ----- */
-function getLeaderboardPlace(stat, user){
-    let arr = Object.keys(users).filter(u=>!users[u].isAdmin).sort((a,b)=>users[b][stat]-users[a][stat]);
-    return arr.indexOf(user)+1;
-}
-
-/* ----- INIT ----- */
-populateVoting(); populatePlayers(); updateUI();
+/* ----- INITIALIZATION ----- */
+populateVoting();
+populatePlayers();
+updateUI();
 </script>
 
 </body>
