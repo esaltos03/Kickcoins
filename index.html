@@ -5,23 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kickcoins - Fantasy Betting</title>
 <style>
-body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; margin:0; padding:0; }
-header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background-color:#1a1a1a; }
+body { font-family: Arial, sans-serif; background:#121212; color:#fff; margin:0; padding:0; }
+header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#1a1a1a; }
 header .account { display:flex; align-items:center; gap:15px; }
-.tabs { display:flex; background-color:#1a1a1a; }
+.tabs { display:flex; background:#1a1a1a; }
 .tab { flex:1; padding:10px; text-align:center; cursor:pointer; border-bottom:2px solid #121212; }
 .tab.active { border-bottom:2px solid #00ff00; }
 main { padding:20px; }
-.card { background-color:#1f1f1f; padding:15px; margin:10px 0; border-radius:8px; }
+.card { background:#1f1f1f; padding:15px; margin:10px 0; border-radius:8px; }
 .prop { display:flex; justify-content:space-between; align-items:center; margin:10px 0; }
-.prop input[type="number"] { width:50px; margin-left:10px; }
-.select-payout { margin-left:10px; }
-select { padding:5px; }
-button { padding:5px 10px; cursor:pointer; border:none; border-radius:5px;}
+.prop input[type=number]{width:50px; margin-left:10px;}
+select{padding:5px;}
+button{padding:5px 10px; cursor:pointer; border:none; border-radius:5px;}
 table { width:100%; border-collapse:collapse; }
 th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
-#login-card { max-width:400px; margin:50px auto; }
 .green{color:#00ff00;} .yellow{color:#ffff00;} .orange{color:#ff9900;} .red{color:#ff0000;}
+#login-card { max-width:400px; margin:50px auto; }
+.medal { font-size:18px; margin-left:5px; }
 </style>
 </head>
 <body>
@@ -79,15 +79,22 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 <!-- Bet History -->
 <div class="tab-content" id="history-tab" style="display:none;">
     <div class="card">
-        <h2>Bet History</h2>
-        <div id="bet-history-container"></div>
+        <h2>Your Bet History</h2>
+        <div id="user-history"></div>
     </div>
 </div>
 
 <!-- Leaderboards -->
 <div class="tab-content" id="leaderboard-tab" style="display:none;">
     <div class="card">
-        <h2>Coins Leaderboard</h2>
+        <h2>MVP Leaderboard</h2>
+        <table id="mvp-leaderboard">
+            <thead><tr><th>Place</th><th>Player</th><th>Points</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div class="card">
+        <h2>Coin Leaderboard</h2>
         <table id="coin-leaderboard">
             <thead><tr><th>Place</th><th>Player</th><th>Coins</th></tr></thead>
             <tbody></tbody>
@@ -101,6 +108,9 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         <h2>Admin Controls</h2>
         <button id="start-match">Start Match</button>
         <button id="end-match">End Match</button>
+        <div id="resolve-bets"></div>
+        <h3>Remove Users</h3>
+        <div id="admin-remove-users"></div>
     </div>
 </div>
 </main>
@@ -109,39 +119,46 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 <script>
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 const propsTemplate = ["Assist","Score","Anything"];
-let users = {
-    "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], betHistory:[], mvpPoints:0 },
-    "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], betHistory:[], mvpPoints:0 },
-    "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], betHistory:[], mvpPoints:0 }
-};
+let users = {};
+if(localStorage.getItem('users')){ users=JSON.parse(localStorage.getItem('users')); }
+else{
+    users = {
+        "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
+        "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
+        "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] }
+    };
+    localStorage.setItem('users', JSON.stringify(users));
+}
 let currentUser = null;
 let matchActive = false;
-let matchNumber = 1;
+let matchNumber = 0;
 
 /* ----- LOGIN / CREATE ----- */
 function showLogin(show=true){
     document.getElementById('login-card').style.display=show?'block':'none';
     document.getElementById('app').style.display=!show?'block':'none';
     document.getElementById('logout-btn').style.display=!show?'inline':'none';
+    if(!show) toggleAdminTab();
 }
+function saveUsers(){ localStorage.setItem('users', JSON.stringify(users)); }
+
 document.getElementById('login-btn').addEventListener('click',()=>{
     const user = document.getElementById('login-username').value;
     const pass = document.getElementById('login-password').value;
     if(users[user] && users[user].password===pass){
-        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards();
+        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory();
         alert("Logged in!");
-    }else{ alert("Invalid credentials"); }
+    } else alert("Invalid credentials");
 });
 document.getElementById('create-btn').addEventListener('click',()=>{
     const user = document.getElementById('login-username').value;
     const pass = document.getElementById('login-password').value;
     if(users[user]){ alert("User exists"); return; }
-    users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],betHistory:[],mvpPoints:0};
+    users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0,history:[]};
+    saveUsers();
     alert("Account created! You can now login.");
 });
-document.getElementById('logout-btn').addEventListener('click',()=>{
-    currentUser=null; showLogin(true);
-});
+document.getElementById('logout-btn').addEventListener('click',()=>{ currentUser=null; showLogin(true); });
 
 /* ----- TAB NAV ----- */
 document.querySelectorAll('.tab').forEach(tab=>{
@@ -150,30 +167,29 @@ document.querySelectorAll('.tab').forEach(tab=>{
         tab.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
         document.getElementById(tab.dataset.tab+'-tab').style.display='block';
-        updateUI();
-        if(tab.dataset.tab==="history") displayBetHistory();
+        updateUI(); if(tab.dataset.tab==='history') updateHistory();
     });
 });
+function toggleAdminTab(){
+    document.querySelectorAll('.tab').forEach(t=>{
+        if(t.dataset.tab==='admin'){ t.style.display=users[currentUser].isAdmin?'block':'none'; }
+    });
+}
 
 /* ----- ACCOUNT DISPLAY ----- */
 function updateUI(){
     if(!currentUser) return;
     let acc = users[currentUser];
-    let sortedCoins = Object.entries(users).filter(u=>!u[1].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
-    let rank = sortedCoins.findIndex(u=>u[0]===currentUser)+1;
-    let medal = rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":"🪨";
-    document.getElementById('account-info').innerHTML=`${currentUser} ${medal} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
+    let leaderboardRank = Object.entries(users).filter(u=>!u[1].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins).findIndex(e=>e[0]===currentUser)+1;
+    let medal = leaderboardRank===1?"🥇":leaderboardRank===2?"🥈":leaderboardRank===3?"🥉":"🍖";
+    document.getElementById('account-info').innerHTML=`${currentUser} | Rank: ${leaderboardRank} ${medal} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
 }
 
 /* ----- MVP VOTING ----- */
 function populateVoting(){
     ["vote1","vote2","vote3"].forEach(id=>{
-        let sel = document.getElementById(id);
-        sel.innerHTML="";
-        players.forEach(p=>{
-            let opt = document.createElement("option"); opt.value=p; opt.text=p;
-            sel.appendChild(opt);
-        });
+        let sel=document.getElementById(id); sel.innerHTML="";
+        players.forEach(p=>{ let opt=document.createElement("option"); opt.value=p; opt.text=p; sel.appendChild(opt); });
     });
 }
 document.getElementById('submit-votes').addEventListener('click',()=>{
@@ -183,36 +199,28 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
     let third=document.getElementById('vote3').value;
     if(new Set([first,second,third]).size<3){ alert("Cannot vote same player multiple times."); return; }
     users[currentUser].votes={"1st":first,"2nd":second,"3rd":third};
-    alert("Votes submitted!");
-    updateLeaderboards();
+    saveUsers();
+    alert("Votes submitted!"); updateLeaderboards();
 });
 
-/* ----- BETTING SYSTEM ----- */
+/* ----- BETTING ----- */
 function populatePlayers(){
-    let sel = document.getElementById('player-select');
-    sel.innerHTML="";
-    players.forEach(p=>{
-        let opt=document.createElement("option"); opt.value=p; opt.text=p;
-        sel.appendChild(opt);
-    });
+    let sel=document.getElementById('player-select'); sel.innerHTML="";
+    players.forEach(p=>{ let opt=document.createElement("option"); opt.value=p; opt.text=p; sel.appendChild(opt); });
     sel.addEventListener('change', populateProps);
 }
 function populateProps(){
-    let container = document.getElementById('props-container');
-    container.innerHTML="";
-    let player = document.getElementById('player-select').value;
-    const odds = 4;
+    let container=document.getElementById('props-container'); container.innerHTML="";
+    let player=document.getElementById('player-select').value;
+    let acc = users[currentUser];
     propsTemplate.forEach(prop=>{
-        let card = document.createElement("div"); card.className="prop";
-        let label = document.createElement("span"); label.textContent=`${prop} (Odds: ${odds}x)`;
-        let input = document.createElement("input"); input.type="number"; input.min=0; input.max=users[currentUser].availableCoins;
-        let payoutPreview = document.createElement("span"); payoutPreview.className="select-payout"; payoutPreview.textContent="";
-        input.oninput=function(){
-            if(this.value>users[currentUser].availableCoins) this.value=users[currentUser].availableCoins;
-            payoutPreview.textContent=this.value>0?`Payout: ${this.value*odds}`:"";
-        };
-        card.appendChild(label); card.appendChild(input); card.appendChild(payoutPreview);
-        container.appendChild(card);
+        let div=document.createElement("div"); div.className="prop";
+        let label=document.createElement("span"); label.textContent=`${prop} (4x)`;
+        let input=document.createElement("input"); input.type="number"; input.min=0; input.max=acc.availableCoins;
+        input.addEventListener('input',()=>{ if(input.value>acc.availableCoins) input.value=acc.availableCoins; payoutSpan.textContent = input.value*4; });
+        let payoutSpan = document.createElement("span"); payoutSpan.style.marginLeft="10px"; payoutSpan.textContent="0";
+        div.appendChild(label); div.appendChild(input); div.appendChild(payoutSpan);
+        container.appendChild(div);
     });
 }
 
@@ -228,79 +236,104 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
             if(acc.availableCoins>=amt){
                 acc.availableCoins-=amt;
                 acc.bets.push({player:document.getElementById('player-select').value,prop:propName,amount:amt,odds:4,resolved:false,won:false});
-            }else{ alert("Cannot bet more than available balance"); }
+            }else alert("Cannot bet more than available balance");
         }
     }
-    updateUI(); alert("Bets placed!");
+    saveUsers(); updateUI(); alert("Bets placed!");
 });
 
-/* ----- BET HISTORY DISPLAY ----- */
-function displayBetHistory(){
+/* ----- BET HISTORY ----- */
+function updateHistory(){
     if(!currentUser) return;
-    const container=document.getElementById('bet-history-container');
-    container.innerHTML="";
-    users[currentUser].betHistory.forEach(match=>{
-        const matchDiv=document.createElement("div"); matchDiv.className="card";
-        matchDiv.innerHTML=`<h3>Match ${match.matchNumber}</h3>`;
-        match.bets.forEach(b=>{
-            let p=document.createElement("p");
-            const payout = b.won?b.amount*b.odds:0;
-            let ratio = payout>0?Math.min(payout/50,1):0; // for gradient scaling
-            let r=Math.floor(255*(1-ratio)), g=Math.floor(255*ratio), color=`rgb(${r},${g},0)`;
-            p.textContent=`${b.player} - ${b.prop} - Bet: ${b.amount} - Won: ${b.won? "Yes" : "No"} - Payout: ${payout}`;
-            p.style.color=color;
-            matchDiv.appendChild(p);
-        });
-        container.appendChild(matchDiv);
+    let container = document.getElementById('user-history'); container.innerHTML="";
+    let acc = users[currentUser];
+    acc.history.forEach((match,i)=>{
+        let div = document.createElement("div");
+        let total = match.reduce((sum,b)=>sum+(b.won?b.amount*b.odds:0),0);
+        let color = `rgb(${255-Math.min(total*5,255)},${Math.min(total*5,255)},0)`; // red→green
+        div.style.background=color; div.style.padding="5px"; div.style.margin="3px 0";
+        div.textContent=`Match ${i+1}: ${total} coins`;
+        container.appendChild(div);
     });
 }
 
-/* ----- ADMIN CONTROLS ----- */
+/* ----- ADMIN ----- */
 document.getElementById('start-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
     if(matchActive){ alert("Match already started"); return; }
-    matchActive=true;
+    matchActive=true; matchNumber++;
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
-            let acc=users[u];
-            let max=Math.min(10, acc.totalCoins);
+            let acc=users[u]; let max=Math.min(10, acc.totalCoins);
             acc.availableCoins=max; acc.totalCoins-=max;
         }
     });
-    updateUI(); alert(`Match ${matchNumber} started!`);
+    saveUsers(); updateUI(); alert("Match started!");
 });
 
 document.getElementById('end-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    if(!matchActive){ alert("Match not started"); return; }
+    if(!matchActive){ alert("No match started"); return; }
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
-            let matchBets=[];
             users[u].bets.forEach(b=>{
                 if(!b.resolved){
-                    let res = confirm(`Did ${b.player} succeed in ${b.prop}? (OK = Yes, Cancel = No)`);
+                    let res = confirm(`Did ${b.player} succeed in ${b.prop}? (OK=Yes, Cancel=No)`);
                     if(res){ b.won=true; users[u].totalCoins+=b.amount*b.odds; }
                     b.resolved=true;
-                    matchBets.push({...b});
                 }
             });
-            if(matchBets.length>0) users[u].betHistory.push({matchNumber, bets:matchBets});
-            users[u].availableCoins=0; // reset coins
-            users[u].bets=[]; // clear active bets
+            let matchBets = users[u].bets.splice(0); // move resolved bets into history
+            users[u].history.push(matchBets);
+            users[u].availableCoins=0;
         }
     });
-    matchActive=false; updateUI(); updateLeaderboards(); alert(`Match ${matchNumber} ended! Bets resolved.`);
-    matchNumber++;
+    matchActive=false; saveUsers(); updateUI(); updateLeaderboards(); updateHistory(); alert("Match ended! Bets resolved.");
 });
+
+/* ----- REMOVE USERS ----- */
+function populateRemoveUsers(){
+    if(!users[currentUser].isAdmin) return;
+    let container=document.getElementById('admin-remove-users'); container.innerHTML="";
+    Object.keys(users).forEach(u=>{
+        if(!users[u].isAdmin){
+            let btn=document.createElement("button"); btn.textContent="Delete "+u;
+            btn.addEventListener('click',()=>{
+                if(confirm(`Are you sure you want to delete ${u}?`)){
+                    delete users[u]; saveUsers(); populateRemoveUsers(); updateLeaderboards(); alert(`${u} deleted`);
+                }
+            });
+            container.appendChild(btn);
+        }
+    });
+}
+populateRemoveUsers();
 
 /* ----- LEADERBOARDS ----- */
 function updateLeaderboards(){
-    // Coins leaderboard with medals
+    // MVP
+    let mvpScores={}; players.forEach(p=>mvpScores[p]=0);
+    Object.keys(users).forEach(u=>{
+        if(!users[u].isAdmin){
+            let v=users[u].votes;
+            if(v["1st"]) mvpScores[v["1st"]]+=5;
+            if(v["2nd"]) mvpScores[v["2nd"]]+=3;
+            if(v["3rd"]) mvpScores[v["3rd"]]+=2;
+        }
+    });
+    let mvpSorted=Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]);
+    let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody'); tbody.innerHTML="";
+    mvpSorted.forEach((entry,i)=>{
+        let tr=document.createElement("tr");
+        tr.innerHTML=`<td>${i+1}</td><td>${entry[0]}</td><td>${entry[1]}</td>`;
+        tbody.appendChild(tr);
+    });
+
+    // Coins
     let coinSorted=Object.entries(users).filter(u=>!u[1].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
-    let ct=document.getElementById('coin-leaderboard').querySelector('tbody');
-    ct.innerHTML="";
+    let ct=document.getElementById('coin-leaderboard').querySelector('tbody'); ct.innerHTML="";
     coinSorted.forEach((entry,i)=>{
-        let medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":"🪨";
+        let medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":"🍖";
         let tr=document.createElement("tr");
         tr.innerHTML=`<td>${i+1}</td><td>${entry[0]} ${medal}</td><td>${entry[1].totalCoins}</td>`;
         ct.appendChild(tr);
