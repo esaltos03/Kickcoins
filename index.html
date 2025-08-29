@@ -116,14 +116,16 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 </div>
 
 <script>
+/* ----- PERSISTENCE ----- */
+let storedUsers = JSON.parse(localStorage.getItem("kickcoinsUsers") || "{}");
+if(Object.keys(storedUsers).length) users = storedUsers;
+
+/* ----- SAVE USERS ----- */
+function saveUsers(){ localStorage.setItem("kickcoinsUsers", JSON.stringify(users)); }
+
 /* ----- SAMPLE DATA ----- */
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 const propsTemplate = ["Assist","Score","Anything"];
-let users = {
-    "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
-    "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
-    "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] }
-};
 let currentUser = null;
 let matchActive = false;
 let bettingOpen = false;
@@ -147,6 +149,7 @@ document.getElementById('create-btn').addEventListener('click',()=>{
     const pass = document.getElementById('login-password').value;
     if(users[user]){ alert("User exists"); return; }
     users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0,history:[]};
+    saveUsers();
     alert("Account created! You can now login.");
 });
 document.getElementById('logout-btn').addEventListener('click',()=>{
@@ -190,6 +193,7 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
     let third=document.getElementById('vote3').value;
     if(new Set([first,second,third]).size<3){ alert("Cannot vote same player multiple times."); return; }
     users[currentUser].votes={"1st":first,"2nd":second,"3rd":third};
+    saveUsers();
     alert("Votes submitted!");
     updateLeaderboards();
 });
@@ -237,11 +241,7 @@ function updatePotentialPayout(){
 
 /* ----- SUBMIT BETS ----- */
 document.getElementById('submit-bets').addEventListener('click',()=>{
-    if(!bettingOpen){ alert("Betting is currently closed."); return; }
-    if(!matchActive){ 
-        let proceed = confirm("Match hasn’t started yet. You can still place bets for when the match starts. Proceed?");
-        if(!proceed) return;
-    }
+    if(!bettingOpen){ alert("Betting not open."); return; }
     let container=document.getElementById('props-container');
     let acc = users[currentUser];
     for(let p of container.children){
@@ -254,32 +254,49 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
             }else{ alert("Cannot bet more than available balance"); }
         }
     }
+    saveUsers();
     updateUI(); updatePotentialPayout(); alert("Bets placed!");
 });
 
 /* ----- ADMIN CONTROLS ----- */
-document.getElementById('open-betting').addEventListener('click', ()=>{
+document.getElementById('open-betting').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    bettingOpen = true;
-    document.getElementById('open-betting').disabled = true;
-    document.getElementById('close-betting').disabled = false;
-    alert("Betting is now OPEN. Users can place bets.");
+    if(confirm("Open betting? All users will receive 10 available coins.")){
+        bettingOpen=true;
+        Object.keys(users).forEach(u=>{
+            if(!users[u].isAdmin){
+                let acc=users[u];
+                let max=Math.min(10, acc.totalCoins);
+                acc.availableCoins=max;
+                acc.totalCoins-=max;
+            }
+        });
+        document.getElementById('close-betting').disabled=false;
+        saveUsers();
+        updateUI();
+        alert("Betting opened!");
+    }
 });
 
-document.getElementById('close-betting').addEventListener('click', ()=>{
+document.getElementById('close-betting').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    bettingOpen = false;
-    document.getElementById('close-betting').disabled = true;
-    document.getElementById('start-match').disabled = false;
-    alert("Betting is now CLOSED. No more bets can be placed.");
+    bettingOpen=false;
+    document.getElementById('close-betting').disabled=true;
+    document.getElementById('start-match').disabled=false;
+    Object.keys(users).forEach(u=>{
+        if(!users[u].isAdmin){ users[u].availableCoins=0; }
+    });
+    saveUsers();
+    updateUI();
+    alert("Betting closed. You can now start the match.");
 });
 
 document.getElementById('start-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    if(matchActive){ alert("Match already started"); return; }
-    matchActive = true;
-    document.getElementById('start-match').disabled = true;
-    document.getElementById('end-match').disabled = false;
+    matchActive=true;
+    document.getElementById('end-match').disabled=false;
+    document.getElementById('start-match').disabled=true;
+    saveUsers();
     alert("Match started!");
 });
 
@@ -303,16 +320,15 @@ document.getElementById('end-match').addEventListener('click',()=>{
             }
         }
     });
-    matchActive = false;
-    document.getElementById('end-match').disabled = true;
-    document.getElementById('open-betting').disabled = false;
-    document.getElementById('start-match').disabled = true;
-    updateUI(); updateLeaderboards(); alert("Match ended! Bets resolved.");
+    matchActive=false;
+    document.getElementById('end-match').disabled=true;
+    saveUsers();
+    updateUI(); updateLeaderboards(); updateHistory();
+    alert("Match ended! Bets resolved.");
 });
 
 /* ----- LEADERBOARDS ----- */
 function updateLeaderboards(){
-    // MVP
     let mvpScores={}; players.forEach(p=>mvpScores[p]=0);
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
@@ -331,7 +347,6 @@ function updateLeaderboards(){
         tbody.appendChild(tr);
     });
 
-    // Coins
     let coinSorted=Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
     let ct=document.getElementById('coin-leaderboard').querySelector('tbody'); ct.innerHTML="";
     coinSorted.forEach((entry,i)=>{
@@ -350,6 +365,7 @@ function updateLeaderboards(){
 function deleteUser(username){
     if(confirm(`Admin, confirm delete ${username}?`)){
         delete users[username];
+        saveUsers();
         updateLeaderboards();
         alert(`${username} deleted`);
     }
@@ -375,10 +391,6 @@ function updateHistory(){
 
 /* ----- INITIALIZE ----- */
 showLogin(true);
-populateVoting();
-populatePlayers();
-updateLeaderboards();
-updateHistory();
 </script>
 </body>
 </html>
