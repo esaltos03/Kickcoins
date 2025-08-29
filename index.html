@@ -22,9 +22,7 @@ button { padding:5px 10px; cursor:pointer; border:none; border-radius:5px; }
 table { width:100%; border-collapse:collapse; }
 th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 #login-card { max-width:400px; margin:50px auto; }
-.bet-result { display:flex; justify-content:space-between; margin:5px 0; }
-.bet-result .win { color:#00ff00; }
-.bet-result .lose { color:#ff0000; }
+.bet-payout { margin-left:10px; font-weight:bold; }
 </style>
 </head>
 <body>
@@ -75,7 +73,7 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         <label>Select Player:</label>
         <select id="player-select"></select>
         <div id="props-container"></div>
-        <div id="potential-payout">Potential Payout: 0</div>
+        <div>Total Potential Payout: <span id="total-payout" class="bet-payout">0</span></div>
         <button id="submit-bets">Place Bets</button>
     </div>
 </div>
@@ -92,7 +90,7 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
     <div class="card">
         <h2>Coin Leaderboard</h2>
         <table id="coin-leaderboard">
-            <thead><tr><th>Place</th><th>Player</th><th>Coins</th></tr></thead>
+            <thead><tr><th>Place</th><th>Player</th><th>Coins</th><th>Admin</th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
@@ -100,7 +98,7 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 
 <!-- Bet History -->
 <div class="tab-content" id="history-tab" style="display:none;">
-    <div id="history-container"></div>
+    <div class="card" id="history-container"></div>
 </div>
 
 <!-- Admin -->
@@ -120,13 +118,12 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 const propsTemplate = ["Assist","Score","Anything"];
 let users = {
-    "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, betHistory:[] },
-    "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, betHistory:[] },
-    "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, betHistory:[] }
+    "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
+    "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
+    "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] }
 };
 let currentUser = null;
 let matchActive = false;
-let matchNumber = 0;
 
 /* ----- LOGIN / CREATE ----- */
 function showLogin(show=true){
@@ -138,7 +135,7 @@ document.getElementById('login-btn').addEventListener('click',()=>{
     const user = document.getElementById('login-username').value;
     const pass = document.getElementById('login-password').value;
     if(users[user] && users[user].password===pass){
-        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateBetHistory();
+        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory();
         alert("Logged in!");
     }else{ alert("Invalid credentials"); }
 });
@@ -146,7 +143,7 @@ document.getElementById('create-btn').addEventListener('click',()=>{
     const user = document.getElementById('login-username').value;
     const pass = document.getElementById('login-password').value;
     if(users[user]){ alert("User exists"); return; }
-    users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0, betHistory:[]};
+    users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0,history:[]};
     alert("Account created! You can now login.");
 });
 document.getElementById('logout-btn').addEventListener('click',()=>{
@@ -160,7 +157,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
         tab.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
         document.getElementById(tab.dataset.tab+'-tab').style.display='block';
-        updateUI(); if(tab.dataset.tab==="history") updateBetHistory();
+        updateUI(); if(tab.dataset.tab==="history") updateHistory();
     });
 });
 
@@ -210,29 +207,38 @@ function populateProps(){
     let player = document.getElementById('player-select').value;
     propsTemplate.forEach(prop=>{
         let card = document.createElement("div"); card.className="prop";
-        let label = document.createElement("span"); label.textContent=`${prop} (4x)`;
+        let label = document.createElement("span"); label.textContent=`${prop} (4x)`; label.className="green";
         let input = document.createElement("input"); input.type="number"; input.min=0; input.max=users[currentUser].availableCoins;
         input.oninput = updatePotentialPayout;
-        card.appendChild(label); card.appendChild(input); container.appendChild(card);
+        card.appendChild(label); card.appendChild(input);
+        container.appendChild(card);
     });
+    updatePotentialPayout();
 }
+
+/* ----- UPDATE POTENTIAL PAYOUT ----- */
 function updatePotentialPayout(){
-    let propsDiv=document.getElementById('props-container').children;
+    const container = document.getElementById('props-container');
     let total=0;
-    for(let p of propsDiv){
+    for(let p of container.children){
         let amt=Number(p.querySelector('input').value);
-        let odds = Number(p.querySelector('span').textContent.match(/\d+/)[0]);
+        let odds=parseInt(p.querySelector('span').textContent.split('(')[1]);
         total += amt*odds;
+        // color gradient: low = yellow, high = green
+        let color = amt*odds>50?'green':'yellow';
+        p.querySelector('span').style.color=color;
     }
-    document.getElementById('potential-payout').textContent=`Potential Payout: ${total}`;
+    const payoutDisplay=document.getElementById('total-payout');
+    payoutDisplay.textContent=total;
+    payoutDisplay.style.color = total>50?'green':'yellow';
 }
 
 /* ----- SUBMIT BETS ----- */
 document.getElementById('submit-bets').addEventListener('click',()=>{
     if(!matchActive){ alert("Match not started yet."); return; }
-    let propsDiv=document.getElementById('props-container').children;
+    let container=document.getElementById('props-container');
     let acc = users[currentUser];
-    for(let p of propsDiv){
+    for(let p of container.children){
         let propName=p.querySelector('span').textContent;
         let amt=Number(p.querySelector('input').value);
         if(amt>0){
@@ -242,7 +248,7 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
             }else{ alert("Cannot bet more than available balance"); }
         }
     }
-    updateUI(); alert("Bets placed!");
+    updateUI(); updatePotentialPayout(); alert("Bets placed!");
 });
 
 /* ----- ADMIN CONTROLS ----- */
@@ -250,12 +256,9 @@ document.getElementById('start-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
     if(matchActive){ alert("Match already started"); return; }
     matchActive=true;
-    matchNumber++;
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
-            let acc=users[u];
-            let max=Math.min(10, acc.totalCoins);
-            acc.availableCoins=max; acc.totalCoins-=max;
+            let acc=users[u]; let max=Math.min(10, acc.totalCoins); acc.availableCoins=max; acc.totalCoins-=max;
         }
     });
     updateUI(); alert("Match started!");
@@ -266,20 +269,23 @@ document.getElementById('end-match').addEventListener('click',()=>{
     if(!matchActive){ alert("Match not started"); return; }
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
-            let matchBets=[];
             users[u].bets.forEach(b=>{
                 if(!b.resolved){
-                    let res = confirm(`Did ${b.player} succeed in ${b.prop}? (OK = Yes, Cancel = No)`);
-                    b.won=res; b.resolved=true;
-                    if(res){ users[u].totalCoins += b.amount * b.odds; }
-                    matchBets.push({...b}); // store copy in bet history
+                    let res = confirm(`Did ${b.player} succeed in ${b.prop}? (OK=Win, Cancel=Lose)`);
+                    b.won=res;
+                    if(res) users[u].totalCoins += b.amount*b.odds;
+                    b.resolved=true;
                 }
             });
-            if(matchBets.length>0) users[u].betHistory.push({match:matchNumber,bets:matchBets});
-            users[u].availableCoins=0; // unspent coins lost
+            users[u].availableCoins=0;
+            // save bet history
+            if(users[u].bets.length>0){
+                users[u].history.push({match:`Match ${users[u].history.length+1}`,bets:[...users[u].bets]});
+                users[u].bets=[];
+            }
         }
     });
-    matchActive=false; updateUI(); updateLeaderboards(); updateBetHistory(); alert("Match ended! Bets resolved.");
+    matchActive=false; updateUI(); updateLeaderboards(); alert("Match ended! Bets resolved.");
 });
 
 /* ----- LEADERBOARDS ----- */
@@ -295,45 +301,53 @@ function updateLeaderboards(){
         }
     });
     let mvpSorted=Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]);
-    let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody');
-    tbody.innerHTML="";
+    let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody'); tbody.innerHTML="";
     mvpSorted.forEach((entry,i)=>{
         let tr=document.createElement("tr");
-        let icon = i===0?"🥇":i===1?"🥈":i===2?"🥉":i<7?"🪨":"🍆";
+        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
         tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1]}</td>`;
         tbody.appendChild(tr);
     });
 
     // Coins
     let coinSorted=Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
-    let ct=document.getElementById('coin-leaderboard').querySelector('tbody');
-    ct.innerHTML="";
+    let ct=document.getElementById('coin-leaderboard').querySelector('tbody'); ct.innerHTML="";
     coinSorted.forEach((entry,i)=>{
         let tr=document.createElement("tr");
-        let icon = i===0?"🥇":i===1?"🥈":i===2?"🥉":i<7?"🪨":"🍆";
-        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1].totalCoins}</td>`;
+        let delBtn='';
+        if(users[currentUser] && users[currentUser].isAdmin){
+            delBtn=`<button onclick="deleteUser('${entry[0]}')">Delete</button>`;
+        }
+        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
+        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1].totalCoins}</td><td>${delBtn}</td>`;
         ct.appendChild(tr);
     });
 }
 
+/* ----- DELETE USER ----- */
+function deleteUser(username){
+    if(confirm(`Admin, confirm delete ${username}?`)){
+        delete users[username];
+        updateLeaderboards();
+        alert(`${username} deleted`);
+    }
+}
+
 /* ----- BET HISTORY ----- */
-function updateBetHistory(){
-    let container=document.getElementById('history-container');
+function updateHistory(){
+    const container=document.getElementById('history-container');
     container.innerHTML="";
     if(!currentUser) return;
-    let history=users[currentUser].betHistory;
-    history.forEach(h=>{
-        let matchDiv=document.createElement("div");
-        matchDiv.className="card";
-        let hTitle=document.createElement("h3"); hTitle.textContent=`Match ${h.match}`;
-        matchDiv.appendChild(hTitle);
-        h.bets.forEach(b=>{
-            let br=document.createElement("div");
-            br.className="bet-result "+(b.won?"win":"lose");
-            br.textContent=`Player: ${b.player}, Prop: ${b.prop}, Bet: ${b.amount}, Result: ${b.won?"Won":"Lost"}, Payout: ${b.won?b.amount*b.odds:0}`;
-            matchDiv.appendChild(br);
+    let hist=users[currentUser].history;
+    hist.forEach(day=>{
+        let div=document.createElement('div');
+        div.style.border='1px solid #666'; div.style.margin='5px'; div.style.padding='5px';
+        div.innerHTML=`<strong>${day.match}</strong><br>`;
+        day.bets.forEach(b=>{
+            let color=b.won?'green':'red';
+            div.innerHTML += `<span style="color:${color}">${b.player} - ${b.prop} - Bet: ${b.amount} - ${b.won?`Won ${b.amount*b.odds}`:`Lost ${b.amount}`}</span><br>`;
         });
-        container.appendChild(matchDiv);
+        container.appendChild(div);
     });
 }
 
