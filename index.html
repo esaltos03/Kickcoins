@@ -107,24 +107,28 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
     <div class="card">
         <h2>Admin Controls</h2>
         <button id="open-bets">Open Betting</button>
-        <button id="close-bets">Close Betting</button>
-        <button id="start-match">Start Match</button>
-        <button id="end-match">End Match</button>
+        <button id="close-bets" disabled>Close Betting</button>
+        <button id="start-match" disabled>Start Match</button>
+        <button id="end-match" disabled>End Match</button>
         <div id="resolve-bets"></div>
     </div>
 </div>
 </main>
-</div>
 
 <script>
-/* ----- SAMPLE DATA ----- */
+/* ----- PERSISTENT STORAGE ----- */
+if(localStorage.getItem('kickcoinsUsers')){
+    var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
+}else{
+    var users = {
+        "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
+        "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
+        "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] }
+    };
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+}
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 const propsTemplate = ["Assist","Score","Anything"];
-let users = {
-    "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
-    "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
-    "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] }
-};
 let currentUser = null;
 let matchActive = false;
 let bettingOpen = false;
@@ -148,6 +152,7 @@ document.getElementById('create-btn').addEventListener('click',()=>{
     const pass = document.getElementById('login-password').value;
     if(users[user]){ alert("User exists"); return; }
     users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0,history:[]};
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
     alert("Account created! You can now login.");
 });
 document.getElementById('logout-btn').addEventListener('click',()=>{
@@ -171,6 +176,7 @@ function updateUI(){
     let acc = users[currentUser];
     let html = `${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
     document.getElementById('account-info').innerHTML=html;
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
 }
 
 /* ----- MVP VOTING ----- */
@@ -191,8 +197,8 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
     let third=document.getElementById('vote3').value;
     if(new Set([first,second,third]).size<3){ alert("Cannot vote same player multiple times."); return; }
     users[currentUser].votes={"1st":first,"2nd":second,"3rd":third};
+    updateLeaderboards(); updateUI();
     alert("Votes submitted!");
-    updateLeaderboards();
 });
 
 /* ----- BETTING SYSTEM ----- */
@@ -260,9 +266,17 @@ const closeBtn = document.getElementById('close-bets');
 const startBtn = document.getElementById('start-match');
 const endBtn = document.getElementById('end-match');
 
+function resetAdminButtons(){
+    openBtn.disabled=false;
+    closeBtn.disabled=true;
+    startBtn.disabled=true;
+    endBtn.disabled=true;
+}
+
+resetAdminButtons();
+
 openBtn.addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    if(bettingOpen){ alert("Betting already open"); return; }
     if(!confirm("Confirm open betting and distribute 10 coins to all users?")) return;
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
@@ -277,7 +291,6 @@ openBtn.addEventListener('click',()=>{
 
 closeBtn.addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    if(!bettingOpen){ alert("Betting not open"); return; }
     if(!confirm("Confirm closing betting. Unused coins will be discarded.")) return;
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
@@ -294,12 +307,12 @@ startBtn.addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
     matchActive=true;
     startBtn.disabled=true;
+    endBtn.disabled=false;
     updateLeaderboards();
 });
 
 endBtn.addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    if(!matchActive){ alert("Match not started"); return; }
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
             users[u].bets.forEach(b=>{
@@ -318,10 +331,7 @@ endBtn.addEventListener('click',()=>{
         }
     });
     matchActive=false;
-    openBtn.disabled = false;
-    closeBtn.disabled = true;
-    startBtn.disabled = true;
-    endBtn.disabled = true;
+    resetAdminButtons();
     updateUI(); updateLeaderboards(); updateHistory();
     alert("Match ended! Bets resolved.");
 });
@@ -367,6 +377,7 @@ function deleteUser(username){
     if(confirm(`Admin, confirm delete ${username}?`)){
         delete users[username];
         updateLeaderboards();
+        updateUI();
         alert(`${username} deleted`);
     }
 }
