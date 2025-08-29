@@ -101,23 +101,34 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         <h2>Admin Controls</h2>
         <button id="start-match">Start Match</button>
         <button id="end-match">End Match</button>
-        <div id="resolve-bets"></div>
+        <h3>Manage Users</h3>
+        <div id="admin-users"></div>
     </div>
 </div>
 </main>
 </div>
 
 <script>
-/* ----- SAMPLE DATA ----- */
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 const propsTemplate = ["Assist","Score","Anything"];
-let users = {
-    "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0 },
-    "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0 },
-    "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0 }
-};
+let users = {};
 let currentUser = null;
 let matchActive = false;
+
+/* ----- LOCAL STORAGE ----- */
+function loadUsers(){
+    let stored = localStorage.getItem('kickcoins-users');
+    if(stored){ users=JSON.parse(stored); }
+    else{
+        users = {
+            "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0 },
+            "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0 },
+            "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0 }
+        };
+        saveUsers();
+    }
+}
+function saveUsers(){ localStorage.setItem('kickcoins-users', JSON.stringify(users)); }
 
 /* ----- LOGIN / CREATE ----- */
 function showLogin(show=true){
@@ -129,7 +140,7 @@ document.getElementById('login-btn').addEventListener('click',()=>{
     const user = document.getElementById('login-username').value;
     const pass = document.getElementById('login-password').value;
     if(users[user] && users[user].password===pass){
-        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards();
+        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); toggleAdminTab(); renderAdminUsers();
         alert("Logged in!");
     }else{ alert("Invalid credentials"); }
 });
@@ -138,6 +149,7 @@ document.getElementById('create-btn').addEventListener('click',()=>{
     const pass = document.getElementById('login-password').value;
     if(users[user]){ alert("User exists"); return; }
     users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0};
+    saveUsers();
     alert("Account created! You can now login.");
 });
 document.getElementById('logout-btn').addEventListener('click',()=>{
@@ -154,13 +166,18 @@ document.querySelectorAll('.tab').forEach(tab=>{
         updateUI();
     });
 });
+function toggleAdminTab(){ 
+    document.querySelectorAll('.tab').forEach(t=>{
+        if(t.dataset.tab==='admin'){ t.style.display = users[currentUser].isAdmin?'block':'none'; }
+    });
+}
 
 /* ----- ACCOUNT DISPLAY ----- */
 function updateUI(){
     if(!currentUser) return;
     let acc = users[currentUser];
     let html = `${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
-    if(currentUser!=="admin") html+=` | MVP Points: ${acc.mvpPoints}`;
+    if(!acc.isAdmin) html+=` | MVP Points: ${acc.mvpPoints}`;
     document.getElementById('account-info').innerHTML=html;
 }
 
@@ -182,6 +199,7 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
     let third=document.getElementById('vote3').value;
     if(new Set([first,second,third]).size<3){ alert("Cannot vote same player multiple times."); return; }
     users[currentUser].votes={"1st":first,"2nd":second,"3rd":third};
+    saveUsers();
     alert("Votes submitted!");
     updateLeaderboards();
 });
@@ -191,7 +209,7 @@ function populatePlayers(){
     let sel = document.getElementById('player-select');
     sel.innerHTML="";
     players.forEach(p=>{
-        let opt=document.createElement("option"); opt.value=p; opt.text=p;
+        let opt = document.createElement("option"); opt.value=p; opt.text=p;
         sel.appendChild(opt);
     });
     sel.addEventListener('change', populateProps);
@@ -202,15 +220,12 @@ function populateProps(){
     let player = document.getElementById('player-select').value;
     propsTemplate.forEach(prop=>{
         let card = document.createElement("div"); card.className="prop";
-        let label = document.createElement("span"); label.textContent=`${prop} (4x)`;
-        label.className="green";
+        let label = document.createElement("span"); label.textContent=`${prop} (4x)`; label.className="green";
         let input = document.createElement("input"); input.type="number"; input.min=0; input.max=users[currentUser].availableCoins;
         input.oninput = function(){ if(this.value>users[currentUser].availableCoins) this.value=users[currentUser].availableCoins; }
         card.appendChild(label); card.appendChild(input); container.appendChild(card);
     });
 }
-
-/* ----- SUBMIT BETS ----- */
 document.getElementById('submit-bets').addEventListener('click',()=>{
     if(!matchActive){ alert("Match not started yet."); return; }
     let propsDiv=document.getElementById('props-container').children;
@@ -225,6 +240,7 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
             }else{ alert("Cannot bet more than available balance"); }
         }
     }
+    saveUsers();
     updateUI(); alert("Bets placed!");
 });
 
@@ -240,13 +256,13 @@ document.getElementById('start-match').addEventListener('click',()=>{
             acc.availableCoins=max; acc.totalCoins-=max;
         }
     });
+    saveUsers();
     updateUI(); alert("Match started!");
 });
 
 document.getElementById('end-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
     if(!matchActive){ alert("Match not started"); return; }
-    // Resolve all bets here with Yes/No prompt per prop
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
             users[u].bets.forEach(b=>{
@@ -256,15 +272,36 @@ document.getElementById('end-match').addEventListener('click',()=>{
                     b.resolved=true;
                 }
             });
-            users[u].availableCoins=0; // unspent coins lost
+            users[u].availableCoins=0;
         }
     });
-    matchActive=false; updateUI(); updateLeaderboards(); alert("Match ended! Bets resolved.");
+    matchActive=false; saveUsers(); updateUI(); updateLeaderboards(); alert("Match ended! Bets resolved.");
 });
+
+/* ----- ADMIN USER MANAGEMENT ----- */
+function renderAdminUsers(){
+    if(!users[currentUser].isAdmin) return;
+    let container=document.getElementById('admin-users');
+    container.innerHTML="";
+    Object.keys(users).forEach(u=>{
+        if(users[u].isAdmin) return;
+        let div=document.createElement('div');
+        div.textContent=u;
+        let btn=document.createElement('button');
+        btn.textContent="Delete";
+        btn.style.marginLeft="10px";
+        btn.addEventListener('click',()=>{
+            if(confirm(`Delete user ${u}? This cannot be undone.`)){
+                delete users[u]; saveUsers(); renderAdminUsers(); updateLeaderboards();
+            }
+        });
+        div.appendChild(btn);
+        container.appendChild(div);
+    });
+}
 
 /* ----- LEADERBOARDS ----- */
 function updateLeaderboards(){
-    // MVP
     let mvpScores={}; players.forEach(p=>mvpScores[p]=0);
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
@@ -283,7 +320,6 @@ function updateLeaderboards(){
         tbody.appendChild(tr);
     });
 
-    // Coins
     let coinSorted=Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
     let ct=document.getElementById('coin-leaderboard').querySelector('tbody');
     ct.innerHTML="";
@@ -295,6 +331,7 @@ function updateLeaderboards(){
 }
 
 /* ----- INITIALIZE ----- */
+loadUsers();
 showLogin(true);
 </script>
 </body>
