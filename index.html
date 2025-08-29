@@ -19,10 +19,11 @@ select { padding:5px; }
 button { padding:5px 10px; cursor:pointer; border:none; border-radius:5px; }
 .green { color:#00ff00; }
 .red { color:#ff0000; }
+.yellow { color:#ffff00; }
+.orange { color:#ff9900; }
 table { width:100%; border-collapse:collapse; }
 th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 #login-card { max-width:400px; margin:50px auto; }
-.bet-payout { margin-left:10px; font-weight:bold; }
 </style>
 </head>
 <body>
@@ -73,7 +74,7 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         <label>Select Player:</label>
         <select id="player-select"></select>
         <div id="props-container"></div>
-        <div>Total Potential Payout: <span id="total-payout" class="bet-payout">0</span></div>
+        <div>Potential Payout: <span id="potential-payout">0</span></div>
         <button id="submit-bets">Place Bets</button>
     </div>
 </div>
@@ -90,7 +91,7 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
     <div class="card">
         <h2>Coin Leaderboard</h2>
         <table id="coin-leaderboard">
-            <thead><tr><th>Place</th><th>Player</th><th>Coins</th><th>Admin</th></tr></thead>
+            <thead><tr><th>Place</th><th>Player</th><th>Coins</th><th>Action</th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
@@ -98,7 +99,10 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 
 <!-- Bet History -->
 <div class="tab-content" id="history-tab" style="display:none;">
-    <div class="card" id="history-container"></div>
+    <div class="card">
+        <h2>Bet History</h2>
+        <div id="history-container"></div>
+    </div>
 </div>
 
 <!-- Admin -->
@@ -114,14 +118,16 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 </div>
 
 <script>
-/* ----- SAMPLE DATA ----- */
+/* ----- SAMPLE DATA WITH LOCAL STORAGE ----- */
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 const propsTemplate = ["Assist","Score","Anything"];
-let users = {
+let users = JSON.parse(localStorage.getItem('kickcoins_users')) || {
     "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
     "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
     "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] }
 };
+function saveUsers(){ localStorage.setItem('kickcoins_users', JSON.stringify(users)); }
+
 let currentUser = null;
 let matchActive = false;
 
@@ -135,7 +141,7 @@ document.getElementById('login-btn').addEventListener('click',()=>{
     const user = document.getElementById('login-username').value;
     const pass = document.getElementById('login-password').value;
     if(users[user] && users[user].password===pass){
-        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory();
+        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); renderHistory();
         alert("Logged in!");
     }else{ alert("Invalid credentials"); }
 });
@@ -144,6 +150,7 @@ document.getElementById('create-btn').addEventListener('click',()=>{
     const pass = document.getElementById('login-password').value;
     if(users[user]){ alert("User exists"); return; }
     users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0,history:[]};
+    saveUsers();
     alert("Account created! You can now login.");
 });
 document.getElementById('logout-btn').addEventListener('click',()=>{
@@ -157,7 +164,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
         tab.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
         document.getElementById(tab.dataset.tab+'-tab').style.display='block';
-        updateUI(); if(tab.dataset.tab==="history") updateHistory();
+        updateUI(); renderHistory();
     });
 });
 
@@ -187,6 +194,7 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
     let third=document.getElementById('vote3').value;
     if(new Set([first,second,third]).size<3){ alert("Cannot vote same player multiple times."); return; }
     users[currentUser].votes={"1st":first,"2nd":second,"3rd":third};
+    saveUsers();
     alert("Votes submitted!");
     updateLeaderboards();
 });
@@ -210,35 +218,27 @@ function populateProps(){
         let label = document.createElement("span"); label.textContent=`${prop} (4x)`; label.className="green";
         let input = document.createElement("input"); input.type="number"; input.min=0; input.max=users[currentUser].availableCoins;
         input.oninput = updatePotentialPayout;
-        card.appendChild(label); card.appendChild(input);
-        container.appendChild(card);
+        card.appendChild(label); card.appendChild(input); container.appendChild(card);
     });
     updatePotentialPayout();
 }
-
-/* ----- UPDATE POTENTIAL PAYOUT ----- */
 function updatePotentialPayout(){
-    const container = document.getElementById('props-container');
     let total=0;
-    for(let p of container.children){
+    let propsDiv=document.getElementById('props-container').children;
+    for(let p of propsDiv){
         let amt=Number(p.querySelector('input').value);
-        let odds=parseInt(p.querySelector('span').textContent.split('(')[1]);
-        total += amt*odds;
-        // color gradient: low = yellow, high = green
-        let color = amt*odds>50?'green':'yellow';
-        p.querySelector('span').style.color=color;
+        let odds=parseInt(p.querySelector('span').textContent.match(/\d+/)[0]);
+        total+=amt*odds;
     }
-    const payoutDisplay=document.getElementById('total-payout');
-    payoutDisplay.textContent=total;
-    payoutDisplay.style.color = total>50?'green':'yellow';
+    document.getElementById('potential-payout').textContent=total;
 }
 
 /* ----- SUBMIT BETS ----- */
 document.getElementById('submit-bets').addEventListener('click',()=>{
     if(!matchActive){ alert("Match not started yet."); return; }
-    let container=document.getElementById('props-container');
+    let propsDiv=document.getElementById('props-container').children;
     let acc = users[currentUser];
-    for(let p of container.children){
+    for(let p of propsDiv){
         let propName=p.querySelector('span').textContent;
         let amt=Number(p.querySelector('input').value);
         if(amt>0){
@@ -248,7 +248,8 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
             }else{ alert("Cannot bet more than available balance"); }
         }
     }
-    updateUI(); updatePotentialPayout(); alert("Bets placed!");
+    saveUsers();
+    updateUI(); alert("Bets placed!"); renderHistory(); updateLeaderboards();
 });
 
 /* ----- ADMIN CONTROLS ----- */
@@ -258,9 +259,12 @@ document.getElementById('start-match').addEventListener('click',()=>{
     matchActive=true;
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
-            let acc=users[u]; let max=Math.min(10, acc.totalCoins); acc.availableCoins=max; acc.totalCoins-=max;
+            let acc=users[u];
+            let max=Math.min(10, acc.totalCoins);
+            acc.availableCoins=max; acc.totalCoins-=max;
         }
     });
+    saveUsers();
     updateUI(); alert("Match started!");
 });
 
@@ -271,21 +275,18 @@ document.getElementById('end-match').addEventListener('click',()=>{
         if(!users[u].isAdmin){
             users[u].bets.forEach(b=>{
                 if(!b.resolved){
-                    let res = confirm(`Did ${b.player} succeed in ${b.prop}? (OK=Win, Cancel=Lose)`);
-                    b.won=res;
-                    if(res) users[u].totalCoins += b.amount*b.odds;
+                    let res = confirm(`Did ${b.player} succeed in ${b.prop}? (OK = Yes, Cancel = No)`);
+                    b.won=res; if(res) users[u].totalCoins+=b.amount*b.odds;
                     b.resolved=true;
                 }
             });
             users[u].availableCoins=0;
-            // save bet history
-            if(users[u].bets.length>0){
-                users[u].history.push({match:`Match ${users[u].history.length+1}`,bets:[...users[u].bets]});
-                users[u].bets=[];
-            }
         }
     });
-    matchActive=false; updateUI(); updateLeaderboards(); alert("Match ended! Bets resolved.");
+    matchActive=false;
+    saveUsers();
+    updateUI(); updateLeaderboards(); renderHistory();
+    alert("Match ended! Bets resolved.");
 });
 
 /* ----- LEADERBOARDS ----- */
@@ -301,53 +302,53 @@ function updateLeaderboards(){
         }
     });
     let mvpSorted=Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]);
-    let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody'); tbody.innerHTML="";
+    let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody');
+    tbody.innerHTML="";
     mvpSorted.forEach((entry,i)=>{
         let tr=document.createElement("tr");
-        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
-        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1]}</td>`;
+        tr.innerHTML=`<td>${i+1}</td><td>${entry[0]}</td><td>${entry[1]}</td>`;
         tbody.appendChild(tr);
     });
 
     // Coins
     let coinSorted=Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
-    let ct=document.getElementById('coin-leaderboard').querySelector('tbody'); ct.innerHTML="";
+    let ct=document.getElementById('coin-leaderboard').querySelector('tbody');
+    ct.innerHTML="";
     coinSorted.forEach((entry,i)=>{
         let tr=document.createElement("tr");
-        let delBtn='';
-        if(users[currentUser] && users[currentUser].isAdmin){
-            delBtn=`<button onclick="deleteUser('${entry[0]}')">Delete</button>`;
+        let deleteBtn = '';
+        if(currentUser && users[currentUser].isAdmin){
+            deleteBtn=`<button onclick="deleteUser('${entry[0]}')">Delete</button>`;
         }
-        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
-        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1].totalCoins}</td><td>${delBtn}</td>`;
+        tr.innerHTML=`<td>${i+1}</td><td>${entry[0]}</td><td>${entry[1].totalCoins}</td><td>${deleteBtn}</td>`;
         ct.appendChild(tr);
     });
 }
 
-/* ----- DELETE USER ----- */
+/* ----- DELETE USER (ADMIN ONLY) ----- */
 function deleteUser(username){
-    if(confirm(`Admin, confirm delete ${username}?`)){
+    if(!currentUser || !users[currentUser].isAdmin) return;
+    if(confirm(`Are you sure you want to delete ${username}?`)){
         delete users[username];
-        updateLeaderboards();
-        alert(`${username} deleted`);
+        saveUsers();
+        updateLeaderboards(); renderHistory();
     }
 }
 
 /* ----- BET HISTORY ----- */
-function updateHistory(){
-    const container=document.getElementById('history-container');
-    container.innerHTML="";
+function renderHistory(){
     if(!currentUser) return;
-    let hist=users[currentUser].history;
-    hist.forEach(day=>{
-        let div=document.createElement('div');
-        div.style.border='1px solid #666'; div.style.margin='5px'; div.style.padding='5px';
-        div.innerHTML=`<strong>${day.match}</strong><br>`;
-        day.bets.forEach(b=>{
-            let color=b.won?'green':'red';
-            div.innerHTML += `<span style="color:${color}">${b.player} - ${b.prop} - Bet: ${b.amount} - ${b.won?`Won ${b.amount*b.odds}`:`Lost ${b.amount}`}</span><br>`;
+    let container = document.getElementById('history-container');
+    container.innerHTML="";
+    let hist = users[currentUser].history || [];
+    hist.forEach((match,i)=>{
+        let card = document.createElement('div'); card.className='card';
+        card.innerHTML=`<h3>Match ${i+1}</h3>`;
+        match.forEach(bet=>{
+            let color=bet.won?'green':'red';
+            card.innerHTML+=`<div style="color:${color}">${bet.player} - ${bet.prop} - Bet: ${bet.amount} - ${bet.won?'Won':'Lost'}</div>`;
         });
-        container.appendChild(div);
+        container.appendChild(card);
     });
 }
 
