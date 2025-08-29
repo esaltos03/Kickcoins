@@ -1,415 +1,251 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kickcoins - Fantasy Betting</title>
-<style>
-body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; margin:0; padding:0; }
-header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background-color:#1a1a1a; }
-header .account { display:flex; align-items:center; gap:15px; }
-.tabs { display:flex; background-color:#1a1a1a; }
-.tab { flex:1; padding:10px; text-align:center; cursor:pointer; border-bottom:2px solid #121212; }
-.tab.active { border-bottom:2px solid #00ff00; }
-main { padding:20px; }
-.card { background-color:#1f1f1f; padding:15px; margin:10px 0; border-radius:8px; }
-.prop { display:flex; justify-content:space-between; align-items:center; margin:10px 0; }
-.prop input[type="number"] { width:50px; margin-left:10px; }
-select { padding:5px; }
-button { padding:5px 10px; cursor:pointer; border:none; border-radius:5px; }
-button:disabled { opacity:0.5; cursor:not-allowed; }
-.green { color:#00ff00; }
-.red { color:#ff0000; }
-table { width:100%; border-collapse:collapse; }
-th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
-#login-card { max-width:400px; margin:50px auto; }
-.bet-payout { margin-left:10px; font-weight:bold; }
-</style>
+  <meta charset="UTF-8">
+  <title>Edge Book</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#111; color:#eee; }
+    .hidden { display:none; }
+    button:disabled { opacity:0.5; pointer-events:none; }
+    .admin-panel { margin-top:20px; padding:10px; border:1px solid #444; }
+    .leaderboard, .history { margin-top:20px; }
+  </style>
 </head>
 <body>
+  <h1>Edge Book</h1>
 
-<header>
-<h1>Kickcoins ⚽</h1>
-<div class="account" id="account-info"></div>
-<button id="logout-btn" style="display:none;">Logout</button>
-</header>
+  <!-- Login -->
+  <div id="login">
+    <input id="username" placeholder="Enter username">
+    <button id="loginBtn">Login</button>
+  </div>
 
-<div id="login-card" class="card">
-<h2>Login / Create Account</h2>
-<label>Username:</label><input type="text" id="login-username"><br><br>
-<label>Password:</label><input type="password" id="login-password"><br><br>
-<button id="login-btn">Login</button>
-<button id="create-btn">Create Account</button>
-</div>
-
-<div id="app" style="display:none;">
-<div class="tabs">
-    <div class="tab active" data-tab="vote">MVP Voting</div>
-    <div class="tab" data-tab="bet">Betting</div>
-    <div class="tab" data-tab="leaderboard">Leaderboards</div>
-    <div class="tab" data-tab="history">Bet History</div>
-    <div class="tab" data-tab="admin">Admin</div>
-</div>
-
-<main>
-<!-- MVP Voting -->
-<div class="tab-content" id="vote-tab">
-    <div class="card">
-        <h2>Vote for MVP</h2>
-        <label>1st Place:</label>
-        <select id="vote1" disabled></select>
-        <label>2nd Place:</label>
-        <select id="vote2" disabled></select>
-        <label>3rd Place:</label>
-        <select id="vote3" disabled></select>
-        <button id="submit-votes" disabled>Submit Votes</button>
+  <!-- User Panel -->
+  <div id="userPanel" class="hidden">
+    <h2 id="welcome"></h2>
+    <p>Available Coins: <span id="coins">0</span></p>
+    <div id="bettingArea" class="hidden">
+      <h3>Place Bets</h3>
+      <select id="playerSelect"></select>
+      <select id="propSelect">
+        <option value="Goal">Goal</option>
+        <option value="Assist">Assist</option>
+        <option value="Clean Sheet">Clean Sheet</option>
+      </select>
+      <input id="betAmount" type="number" min="1" value="1">
+      <button id="placeBet">Submit Bet</button>
+      <div id="currentBets"></div>
     </div>
-</div>
 
-<!-- Betting -->
-<div class="tab-content" id="bet-tab" style="display:none;">
-    <div class="card">
-        <h2>Betting</h2>
-        <div id="balance-display"></div>
-        <label>Select Player:</label>
-        <select id="player-select"></select>
-        <div id="props-container"></div>
-        <div>Total Potential Payout: <span id="total-payout" class="bet-payout">0</span></div>
-        <button id="submit-bets">Place Bets</button>
+    <div id="mvpVoting" class="hidden">
+      <h3>MVP Voting</h3>
+      1st: <select id="vote1"></select>
+      2nd: <select id="vote2"></select>
+      3rd: <select id="vote3"></select>
+      <button id="submit-votes">Submit Votes</button>
     </div>
-</div>
 
-<!-- Leaderboards -->
-<div class="tab-content" id="leaderboard-tab" style="display:none;">
-    <div class="card">
-        <h2>MVP Leaderboard</h2>
-        <table id="mvp-leaderboard">
-            <thead><tr><th>Place</th><th>Player</th><th>Points</th></tr></thead>
-            <tbody></tbody>
-        </table>
+    <div class="leaderboard">
+      <h3>Leaderboard</h3>
+      <ul id="leaderboardList"></ul>
+      <h3>MVP Leaderboard</h3>
+      <ul id="mvpLeaderboardList"></ul>
     </div>
-    <div class="card">
-        <h2>Coin Leaderboard</h2>
-        <table id="coin-leaderboard">
-            <thead><tr><th>Place</th><th>Player</th><th>Coins</th><th>Admin</th></tr></thead>
-            <tbody></tbody>
-        </table>
-    </div>
-</div>
 
-<!-- Bet History -->
-<div class="tab-content" id="history-tab" style="display:none;">
-    <div class="card" id="history-container"></div>
-</div>
-
-<!-- Admin -->
-<div class="tab-content" id="admin-tab" style="display:none;">
-    <div class="card">
-        <h2>Admin Controls</h2>
-        <button id="open-bets">Open Bets</button>
-        <button id="close-bets" disabled>Close Bets</button>
-        <button id="start-match" disabled>Start Match</button>
-        <button id="end-match" disabled>End Match</button>
-        <div id="resolve-bets"></div>
+    <div class="history">
+      <h3>Betting History</h3>
+      <ul id="historyList"></ul>
     </div>
-</div>
-</main>
-</div>
+  </div>
+
+  <!-- Admin Panel -->
+  <div id="adminPanel" class="admin-panel hidden">
+    <h2>Admin Controls</h2>
+    <button id="open-bets">Open Bets</button>
+    <button id="close-bets" disabled>Close Bets</button>
+    <button id="start-match" disabled>Start Match</button>
+    <button id="end-match" disabled>End Match</button>
+  </div>
 
 <script>
-/* ----- SAMPLE DATA ----- */
-const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
-const propsTemplate = ["Assist","Score","Anything"];
-let users = JSON.parse(localStorage.getItem('kickcoinsUsers')) || {
-    "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
-    "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
-    "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] }
-};
-let currentUser = null;
-let matchActive = false;
+let users = JSON.parse(localStorage.getItem("users")) || {};
+let currentUser=null;
+let matchActive=false;
 
-/* ----- SAVE / LOAD ----- */
-function saveUsers(){ localStorage.setItem('kickcoinsUsers', JSON.stringify(users)); }
+function saveUsers(){ localStorage.setItem("users", JSON.stringify(users)); }
 
-/* ----- LOGIN / CREATE ----- */
-function showLogin(show=true){
-    document.getElementById('login-card').style.display=show?'block':'none';
-    document.getElementById('app').style.display=!show?'block':'none';
-    document.getElementById('logout-btn').style.display=!show?'inline':'none';
-}
-document.getElementById('login-btn').addEventListener('click',()=>{
-    const user = document.getElementById('login-username').value;
-    const pass = document.getElementById('login-password').value;
-    if(users[user] && users[user].password===pass){
-        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory();
-        alert("Logged in!");
-    }else{ alert("Invalid credentials"); }
-});
-document.getElementById('create-btn').addEventListener('click',()=>{
-    const user = document.getElementById('login-username').value;
-    const pass = document.getElementById('login-password').value;
-    if(users[user]){ alert("User exists"); return; }
-    users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0,history:[]};
-    saveUsers();
-    alert("Account created! You can now login.");
-});
-document.getElementById('logout-btn').addEventListener('click',()=>{
-    currentUser=null; showLogin(true);
-});
-
-/* ----- TAB NAV ----- */
-document.querySelectorAll('.tab').forEach(tab=>{
-    tab.addEventListener('click',()=>{
-        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-        tab.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
-        document.getElementById(tab.dataset.tab+'-tab').style.display='block';
-        updateUI(); if(tab.dataset.tab==="history") updateHistory();
-    });
-});
-
-/* ----- ACCOUNT DISPLAY ----- */
-function updateUI(){
-    if(!currentUser) return;
-    let acc = users[currentUser];
-    let html = `${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
-    document.getElementById('account-info').innerHTML=html;
-}
-
-/* ----- MVP VOTING ----- */
-function populateVoting(){
-    ["vote1","vote2","vote3"].forEach(id=>{
-        let sel = document.getElementById(id);
-        sel.innerHTML="";
-        players.forEach(p=>{
-            let opt = document.createElement("option"); opt.value=p; opt.text=p;
-            sel.appendChild(opt);
-        });
-    });
-}
-
-/* ----- BETTING SYSTEM ----- */
-function populatePlayers(){
-    let sel = document.getElementById('player-select');
-    sel.innerHTML="";
-    players.forEach(p=>{
-        let opt=document.createElement("option"); opt.value=p; opt.text=p;
-        sel.appendChild(opt);
-    });
-    sel.addEventListener('change', populateProps);
-}
-function populateProps(){
-    let container = document.getElementById('props-container');
-    container.innerHTML="";
-    let player = document.getElementById('player-select').value;
-    propsTemplate.forEach(prop=>{
-        let card = document.createElement("div"); card.className="prop";
-        let label = document.createElement("span"); label.textContent=`${prop} (4x)`; label.className="green";
-        let input = document.createElement("input"); input.type="number"; input.min=0; input.max=users[currentUser].availableCoins;
-        input.oninput = updatePotentialPayout;
-        card.appendChild(label); card.appendChild(input);
-        container.appendChild(card);
-    });
-    updatePotentialPayout();
-}
-
-/* ----- UPDATE POTENTIAL PAYOUT ----- */
-function updatePotentialPayout(){
-    const container = document.getElementById('props-container');
-    let total=0;
-    for(let p of container.children){
-        let amt=Number(p.querySelector('input').value);
-        let odds=parseInt(p.querySelector('span').textContent.split('(')[1]);
-        total += amt*odds;
-        // color gradient
-        let color = amt*odds>50?'green':'yellow';
-        p.querySelector('span').style.color=color;
-    }
-    const payoutDisplay=document.getElementById('total-payout');
-    payoutDisplay.textContent=total;
-    payoutDisplay.style.color = total>50?'green':'yellow';
-}
-
-/* ----- SUBMIT BETS ----- */
-document.getElementById('submit-bets').addEventListener('click',()=>{
-    if(!matchActive){ alert("Match not started yet."); return; }
-    let container=document.getElementById('props-container');
-    let acc = users[currentUser];
-    for(let p of container.children){
-        let propName=p.querySelector('span').textContent;
-        let amt=Number(p.querySelector('input').value);
-        if(amt>0){
-            if(acc.availableCoins>=amt){
-                acc.availableCoins-=amt;
-                acc.bets.push({player:document.getElementById('player-select').value,prop:propName,amount:amt,odds:4,resolved:false,won:false});
-            }else{ alert("Cannot bet more than available balance"); }
-        }
-    }
-    saveUsers();
-    updateUI(); updatePotentialPayout(); alert("Bets placed!");
-});
-
-/* ----- ADMIN CONTROLS ----- */
-const openBtn = document.getElementById('open-bets');
-const closeBtn = document.getElementById('close-bets');
-const startBtn = document.getElementById('start-match');
-const endBtn = document.getElementById('end-match');
-
-openBtn.addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    if(confirm("Confirm open bets and give everyone 10 available coins?")){
-        Object.keys(users).forEach(u=>{
-            if(!users[u].isAdmin){
-                let acc = users[u];
-                let give = Math.min(10, acc.totalCoins);
-                acc.availableCoins = give;
-                acc.totalCoins -= give;
-            }
-        });
-        matchActive=true;
-        saveUsers();
-        updateUI();
-        openBtn.disabled=true;
-        closeBtn.disabled=false;
-        startBtn.disabled=true;
-        endBtn.disabled=true;
-        alert("Bets are now open!");
-    }
-});
-
-closeBtn.addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    if(confirm("Confirm close bets? Unused available coins will be discarded.")){
-        Object.keys(users).forEach(u=>{
-            if(!users[u].isAdmin){
-                users[u].availableCoins=0;
-            }
-        });
-        saveUsers();
-        openBtn.disabled=true;
-        closeBtn.disabled=true;
-        startBtn.disabled=false;
-        endBtn.disabled=true;
-        alert("Bets are now closed!");
-    }
-});
-
-startBtn.addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    // Enable voting
-    ["vote1","vote2","vote3"].forEach(id=>document.getElementById(id).disabled=false);
-    document.getElementById('submit-votes').disabled=false;
-    saveUsers();
-    openBtn.disabled=true;
-    closeBtn.disabled=true;
-    startBtn.disabled=true;
-    endBtn.disabled=false;
-    alert("Match started! Voting enabled.");
-});
-
-endBtn.addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    // resolve bets
-    Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin){
-            users[u].bets.forEach(b=>{
-                if(!b.resolved){
-                    let res = confirm(`Did ${b.player} succeed in ${b.prop}? (OK=Win, Cancel=Lose)`);
-                    b.won=res;
-                    if(res) users[u].totalCoins += b.amount*b.odds;
-                    b.resolved=true;
-                }
-            });
-            users[u].availableCoins=0;
-            if(users[u].bets.length>0){
-                users[u].history.push({match:`Match ${users[u].history.length+1}`,bets:[...users[u].bets]});
-                users[u].bets=[];
-            }
-        }
-    });
-    // tally MVP points
-    Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin){
-            let v=users[u].votes;
-            if(v["1st"]) users[v["1st"]].mvpPoints += 5;
-            if(v["2nd"]) users[v["2nd"]].mvpPoints += 3;
-            if(v["3rd"]) users[v["3rd"]].mvpPoints += 2;
-            users[u].votes={};
-        }
-    });
-    ["vote1","vote2","vote3"].forEach(id=>document.getElementById(id).disabled=true);
-    document.getElementById('submit-votes').disabled=true;
-    saveUsers();
-    updateLeaderboards(); updateHistory();
-    alert("Match ended! Bets resolved and MVP points tallied.");
-    // reset buttons
-    openBtn.disabled=false;
-    closeBtn.disabled=true;
-    startBtn.disabled=true;
-    endBtn.disabled=true;
-});
-
-/* ----- LEADERBOARDS ----- */
 function updateLeaderboards(){
-    let mvpScores={}; players.forEach(p=>mvpScores[p]=0);
-    Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin){
-            mvpScores[u] = users[u].mvpPoints;
-        }
-    });
-    let mvpSorted=Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]);
-    let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody'); tbody.innerHTML="";
-    mvpSorted.forEach((entry,i)=>{
-        let tr=document.createElement("tr");
-        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
-        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1]}</td>`;
-        tbody.appendChild(tr);
-    });
-
-    let coinSorted=Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
-    let ct=document.getElementById('coin-leaderboard').querySelector('tbody'); ct.innerHTML="";
-    coinSorted.forEach((entry,i)=>{
-        let tr=document.createElement("tr");
-        let delBtn='';
-        if(users[currentUser] && users[currentUser].isAdmin){
-            delBtn=`<button onclick="deleteUser('${entry[0]}')">Delete</button>`;
-        }
-        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
-        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1].totalCoins}</td><td>${delBtn}</td>`;
-        ct.appendChild(tr);
-    });
-}
-
-/* ----- DELETE USER ----- */
-function deleteUser(username){
-    if(confirm(`Admin, confirm delete ${username}?`)){
-        delete users[username];
-        saveUsers();
-        updateLeaderboards();
-        alert(`${username} deleted`);
+  let lb=document.getElementById("leaderboardList");
+  lb.innerHTML="";
+  Object.keys(users).forEach(u=>{
+    if(!users[u].isAdmin){
+      let li=document.createElement("li");
+      li.textContent=`${u}: ${users[u].totalCoins} coins`;
+      lb.appendChild(li);
     }
+  });
+  let mvp=document.getElementById("mvpLeaderboardList");
+  mvp.innerHTML="";
+  Object.keys(users).forEach(u=>{
+    if(!users[u].isAdmin){
+      let li=document.createElement("li");
+      li.textContent=`${u}: ${users[u].mvpPoints} MVP pts`;
+      mvp.appendChild(li);
+    }
+  });
 }
 
-/* ----- BET HISTORY ----- */
 function updateHistory(){
-    const container=document.getElementById('history-container');
-    container.innerHTML="";
-    if(!currentUser) return;
-    let hist=users[currentUser].history;
-    hist.forEach(day=>{
-        let div=document.createElement('div');
-        div.style.border='1px solid #666'; div.style.margin='5px'; div.style.padding='5px';
-        div.innerHTML=`<strong>${day.match}</strong><br>`;
-        day.bets.forEach(b=>{
-            let color=b.won?'green':'red';
-            div.innerHTML += `<span style="color:${color}">${b.player} - ${b.prop} - Bet: ${b.amount} - ${b.won?`Won ${b.amount*b.odds}`:`Lost ${b.amount}`}</span><br>`;
-        });
-        container.appendChild(div);
-    });
+  let list=document.getElementById("historyList");
+  list.innerHTML="";
+  if(!currentUser) return;
+  users[currentUser].history.forEach(h=>{
+    let li=document.createElement("li");
+    li.textContent=`${h.match}: ${h.bets.map(b=>`${b.player}-${b.prop}-${b.amount}c ${b.won?'W':'L'}`).join(", ")}`;
+    list.appendChild(li);
+  });
 }
 
-/* ----- INITIALIZE ----- */
-showLogin(true);
+function populatePlayers(select){
+  select.innerHTML="";
+  Object.keys(users).forEach(u=>{
+    if(!users[u].isAdmin){
+      let opt=document.createElement("option");
+      opt.value=u; opt.textContent=u;
+      select.appendChild(opt);
+    }
+  });
+}
+
+document.getElementById("loginBtn").addEventListener("click",()=>{
+  let uname=document.getElementById("username").value.trim();
+  if(!uname) return;
+  if(!users[uname]){
+    users[uname]={isAdmin:(uname==="Erick"),availableCoins:0,totalCoins:0,bets:[],history:[],votes:{},mvpPoints:0};
+  }
+  currentUser=uname;
+  saveUsers();
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("userPanel").classList.remove("hidden");
+  document.getElementById("welcome").textContent=`Welcome ${uname}`;
+  document.getElementById("coins").textContent=users[uname].availableCoins;
+  populatePlayers(document.getElementById("playerSelect"));
+  populatePlayers(document.getElementById("vote1"));
+  populatePlayers(document.getElementById("vote2"));
+  populatePlayers(document.getElementById("vote3"));
+  updateLeaderboards();
+  updateHistory();
+  if(users[uname].isAdmin){
+    document.getElementById("adminPanel").classList.remove("hidden");
+  }
+});
+
+// Place Bet
+document.getElementById("placeBet").addEventListener("click",()=>{
+  let amt=parseInt(document.getElementById("betAmount").value);
+  if(amt>users[currentUser].availableCoins){alert("Not enough coins");return;}
+  let player=document.getElementById("playerSelect").value;
+  let prop=document.getElementById("propSelect").value;
+  users[currentUser].availableCoins-=amt;
+  users[currentUser].bets.push({player,prop,amount:amt,odds:2,resolved:false});
+  document.getElementById("coins").textContent=users[currentUser].availableCoins;
+  saveUsers();
+});
+
+// MVP Submit Votes (fixed)
+document.getElementById('submit-votes').addEventListener('click', ()=>{
+  if(!matchActive){ alert("Match not started yet."); return; }
+  let first=document.getElementById('vote1').value;
+  let second=document.getElementById('vote2').value;
+  let third=document.getElementById('vote3').value;
+  if(new Set([first,second,third]).size < 3){ alert("Cannot vote same player multiple times."); return; }
+  users[currentUser].votes = {"1st":first,"2nd":second,"3rd":third};
+  saveUsers();
+  alert("Votes submitted!");
+  updateLeaderboards();
+});
+
+// Admin Buttons
+let openBtn=document.getElementById("open-bets");
+let closeBtn=document.getElementById("close-bets");
+let startBtn=document.getElementById("start-match");
+let endBtn=document.getElementById("end-match");
+
+openBtn.addEventListener("click",()=>{
+  Object.keys(users).forEach(u=>{
+    if(!users[u].isAdmin) users[u].availableCoins+=10;
+  });
+  saveUsers();
+  if(!users[currentUser].isAdmin){
+    document.getElementById("coins").textContent=users[currentUser].availableCoins;
+  }
+  document.getElementById("bettingArea").classList.remove("hidden");
+  openBtn.disabled=true; closeBtn.disabled=false;
+});
+
+closeBtn.addEventListener("click",()=>{
+  document.getElementById("bettingArea").classList.add("hidden");
+  Object.keys(users).forEach(u=>{users[u].availableCoins=0;});
+  saveUsers();
+  closeBtn.disabled=true; startBtn.disabled=false;
+});
+
+startBtn.addEventListener("click",()=>{
+  matchActive=true;
+  document.getElementById("mvpVoting").classList.remove("hidden");
+  ["vote1","vote2","vote3"].forEach(id=>document.getElementById(id).disabled=false);
+  document.getElementById("submit-votes").disabled=false;
+  startBtn.disabled=true; endBtn.disabled=false;
+});
+
+// End Match (fixed)
+endBtn.addEventListener('click', ()=>{
+  if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
+  
+  Object.keys(users).forEach(u=>{
+    if(!users[u].isAdmin){
+      users[u].bets.forEach(b=>{
+        if(!b.resolved){
+          let res=confirm(`Did ${b.player} succeed in ${b.prop}? (OK=Win, Cancel=Lose)`);
+          b.won=res;
+          if(res) users[u].totalCoins+=b.amount*b.odds;
+          b.resolved=true;
+        }
+      });
+      users[u].availableCoins=0;
+      if(users[u].bets.length>0){
+        users[u].history.push({match:`Match ${users[u].history.length+1}`,bets:[...users[u].bets]});
+        users[u].bets=[];
+      }
+    }
+  });
+
+  Object.keys(users).forEach(u=>{
+    if(!users[u].isAdmin){
+      let v=users[u].votes;
+      if(v["1st"]) users[v["1st"]].mvpPoints+=5;
+      if(v["2nd"]) users[v["2nd"]].mvpPoints+=3;
+      if(v["3rd"]) users[v["3rd"]].mvpPoints+=2;
+      users[u].votes={};
+    }
+  });
+
+  ["vote1","vote2","vote3"].forEach(id=>document.getElementById(id).disabled=true);
+  document.getElementById('submit-votes').disabled=true;
+
+  saveUsers();
+  updateLeaderboards();
+  updateHistory();
+  alert("Match ended! Bets resolved and MVP points tallied.");
+
+  // Reset button sequence
+  openBtn.disabled=false;
+  closeBtn.disabled=true;
+  startBtn.disabled=true;
+  endBtn.disabled=true;
+
+  matchActive=false;
+});
 </script>
 </body>
 </html>
