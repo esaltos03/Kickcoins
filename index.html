@@ -99,8 +99,6 @@
             <button id="start-match">Start Match</button>
             <button id="end-match">End Match</button>
             <div id="resolve-bets"></div>
-            <h3>User Management</h3>
-            <div id="user-management"></div>
         </div>
     </div>
 </main>
@@ -128,20 +126,14 @@ function showUI(){
 document.getElementById('login-btn').addEventListener('click',()=>{
     let u=document.getElementById('username').value;
     let p=document.getElementById('password').value;
-    if(users[u] && users[u].password===p){ 
-        currentUser=u; 
-        showUI(); toggleAdminTab(); populateVoting(); populatePlayers(); updateLeaderboards();
-    }
+    if(users[u] && users[u].password===p){ currentUser=u; showUI(); toggleAdminTab(); populateVoting(); populatePlayers(); updateLeaderboards();}
     else alert("Invalid credentials");
 });
 document.getElementById('signup-btn').addEventListener('click',()=>{
     let u=document.getElementById('username').value;
     let p=document.getElementById('password').value;
-    if(!users[u]){
-        users[u]={password:p,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0};
-        currentUser=u; 
-        showUI(); toggleAdminTab(); populateVoting(); populatePlayers(); updateLeaderboards();
-    } else alert("Username taken");
+    if(!users[u]){ users[u]={password:p,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0}; currentUser=u; showUI(); toggleAdminTab(); populateVoting(); populatePlayers(); updateLeaderboards(); }
+    else alert("Username taken");
 });
 document.getElementById('logout-btn').addEventListener('click',()=>{
     currentUser=null; location.reload();
@@ -154,9 +146,6 @@ document.querySelectorAll('.tab').forEach(tab=>{
         tab.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(tc=>tc.classList.add('hidden'));
         document.getElementById(tab.dataset.tab+'-tab').classList.remove('hidden');
-        if(tab.dataset.tab==='admin' && users[currentUser].isAdmin){
-            renderUserManagement();
-        }
     });
 });
 function toggleAdminTab(){ 
@@ -254,36 +243,12 @@ document.getElementById('start-match').addEventListener('click',()=>{
 
 document.getElementById('end-match').addEventListener('click',()=>{
     if(!matchActive){ alert("No active match"); return;}
+    // For simplicity just clear available coins
     Object.keys(users).forEach(u=>{ if(!users[u].isAdmin) users[u].availableCoins=0; });
     matchActive=false;
     alert("Match ended! Admin should resolve bets.");
     updateUI(); updateLeaderboards();
 });
-
-/* ----- ADMIN USER MANAGEMENT ----- */
-function renderUserManagement(){
-    if(!users[currentUser].isAdmin) return;
-    const container = document.getElementById('user-management');
-    container.innerHTML = "";
-    Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin){
-            const div = document.createElement("div");
-            div.textContent = u + " ";
-            const btn = document.createElement("button");
-            btn.textContent = "Delete";
-            btn.onclick = function(){
-                if(confirm(`Are you sure you want to delete user "${u}"? This cannot be undone.`)){
-                    delete users[u];
-                    alert(`User "${u}" deleted.`);
-                    renderUserManagement();
-                    updateLeaderboards();
-                }
-            };
-            div.appendChild(btn);
-            container.appendChild(div);
-        }
-    });
-}
 </script>
 
 </body>
