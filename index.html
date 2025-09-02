@@ -119,13 +119,24 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 /* ----- PERSISTENT STORAGE ----- */
 if(localStorage.getItem('kickcoinsUsers')){
     var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
+    Object.values(users).forEach(user => {
+        user.votes = {}; // Reset votes for all users
+        user.voted = false;
+    });
+    console.log(users);
 }else{
     var users = {
         "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false },
         "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false  },
         "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false  }
     };
-    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+    Object.keys(users).forEach(user => {
+    
+    users[user].voted = false; // Reset voting status
+    console.log(users);
+    console.log(mvpScores);
+});
+localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
 }
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 let mvpScores={}; players.forEach(p=>mvpScores[p]=0);
