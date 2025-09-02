@@ -121,13 +121,14 @@ if(localStorage.getItem('kickcoinsUsers')){
     var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
 }else{
     var users = {
-        "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
-        "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] },
-        "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[] }
+        "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false },
+        "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false  },
+        "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false  }
     };
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
 }
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
+let mvpScores={}; players.forEach(p=>mvpScores[p]=0);
 const propsTemplate = ["Assist","Score","Anything"];
 let currentUser = null;
 let matchActive = false;
@@ -151,7 +152,7 @@ document.getElementById('create-btn').addEventListener('click',()=>{
     const user = document.getElementById('login-username').value;
     const pass = document.getElementById('login-password').value;
     if(users[user]){ alert("User exists"); return; }
-    users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0,history:[]};
+    users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0,history:[],voted:false};
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
     alert("Account created! You can now login.");
 });
@@ -192,12 +193,14 @@ function populateVoting(){
 }
 document.getElementById('submit-votes').addEventListener('click',()=>{
     if(!matchActive){ alert("Match not started yet."); return; }
+    if(users[currentUser].voted){ alert("Already voted."); return; }
     let first=document.getElementById('vote1').value;
     let second=document.getElementById('vote2').value;
     let third=document.getElementById('vote3').value;
     if(new Set([first,second,third]).size<3){ alert("Cannot vote same player multiple times."); return; }
     users[currentUser].votes={"1st":first,"2nd":second,"3rd":third};
     updateLeaderboards(); updateUI();
+    users[currentUser].voted=true;
     alert("Votes submitted!");
 });
 
@@ -339,7 +342,6 @@ endBtn.addEventListener('click',()=>{
 /* ----- LEADERBOARDS ----- */
 function updateLeaderboards(){
     // MVP
-    let mvpScores={}; players.forEach(p=>mvpScores[p]=0);
     Object.keys(users).forEach( u=> {
         let v=users[u].votes;
         if(v["1st"]) mvpScores[v["1st"]]+=5;
