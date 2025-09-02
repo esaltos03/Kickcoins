@@ -121,9 +121,7 @@ if(localStorage.getItem('kickcoinsUsers')){
     var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
     Object.values(users).forEach(user => {
         user.votes = {}; // Reset votes for all users
-        user.voted = false;
     });
-    console.log(users);
 }else{
     var users = {
         "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false },
@@ -131,15 +129,16 @@ if(localStorage.getItem('kickcoinsUsers')){
         "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false  }
     };
     Object.keys(users).forEach(user => {
-    
-    users[user].voted = false; // Reset voting status
-    console.log(users);
-    console.log(mvpScores);
 });
 localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
 }
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
-let mvpScores={}; players.forEach(p=>mvpScores[p]=0);
+let mvpScores = localStorage.getItem('mvpScores') 
+    ? JSON.parse(localStorage.getItem('mvpScores')) 
+    : {};
+players.forEach(p => {
+    if (!mvpScores[p]) mvpScores[p] = 0; // Ensure all players are initialized
+});
 const propsTemplate = ["Assist","Score","Anything"];
 let currentUser = null;
 let matchActive = false;
@@ -212,6 +211,7 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
     users[currentUser].votes={"1st":first,"2nd":second,"3rd":third};
     updateLeaderboards(); updateUI();
     users[currentUser].voted=true;
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users)); //save state for user voted
     alert("Votes submitted!");
 });
 
@@ -280,14 +280,41 @@ const closeBtn = document.getElementById('close-bets');
 const startBtn = document.getElementById('start-match');
 const endBtn = document.getElementById('end-match');
 
+loadButtonStates();
+
+function saveButtonStates() {
+    const buttonStates = {
+        openBtn: openBtn.disabled,
+        closeBtn: closeBtn.disabled,
+        startBtn: startBtn.disabled,
+        endBtn: endBtn.disabled,
+        matchActive: matchActive,
+        bettingOpen: bettingOpen
+    };
+    localStorage.setItem('buttonStates', JSON.stringify(buttonStates));
+}
+
+function loadButtonStates() {
+    const buttonStates = JSON.parse(localStorage.getItem('buttonStates'));
+    if (buttonStates) {
+        openBtn.disabled = buttonStates.openBtn;
+        closeBtn.disabled = buttonStates.closeBtn;
+        startBtn.disabled = buttonStates.startBtn;
+        endBtn.disabled = buttonStates.endBtn;
+        matchActive = buttonStates.matchActive;
+        bettingOpen = buttonStates.bettingOpen;
+    }
+}
+
 function resetAdminButtons(){
     openBtn.disabled=false;
     closeBtn.disabled=true;
     startBtn.disabled=true;
     endBtn.disabled=true;
+    matchActive=false;
+    bettingOpen=false;
+    saveButtonStates(); // Save the updated states
 }
-
-resetAdminButtons();
 
 openBtn.addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
@@ -300,6 +327,7 @@ openBtn.addEventListener('click',()=>{
     bettingOpen = true;
     openBtn.disabled = true;
     closeBtn.disabled = false;
+    saveButtonStates();
     updateUI();
 });
 
@@ -314,14 +342,18 @@ closeBtn.addEventListener('click',()=>{
     bettingOpen = false;
     closeBtn.disabled = true;
     startBtn.disabled = false;
+    saveButtonStates();
     updateUI();
 });
 
 startBtn.addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
+    players.forEach(p=>mvpScores[p]=0);
+    localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
     matchActive=true;
     startBtn.disabled=true;
     endBtn.disabled=false;
+    saveButtonStates();
     updateLeaderboards();
 });
 
@@ -346,19 +378,26 @@ endBtn.addEventListener('click',()=>{
     });
     matchActive=false;
     resetAdminButtons();
+    saveButtonStates();
     updateUI(); updateLeaderboards(); updateHistory();
+    Object.values(users).forEach(user => {
+        user.voted = false; // Reset voted for all users
+    });
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users)); //save state for user voted
     alert("Match ended! Bets resolved.");
 });
 
 /* ----- LEADERBOARDS ----- */
 function updateLeaderboards(){
     // MVP
-    Object.keys(users).forEach( u=> {
-        let v=users[u].votes;
-        if(v["1st"]) mvpScores[v["1st"]]+=5;
-        if(v["2nd"]) mvpScores[v["2nd"]]+=3;
-        if(v["3rd"]) mvpScores[v["3rd"]]+=2;
-    });
+    if(matchActive){
+        Object.keys(users).forEach( u=> {
+            let v=users[u].votes;
+            if(v["1st"]) mvpScores[v["1st"]]+=5;
+            if(v["2nd"]) mvpScores[v["2nd"]]+=3;
+            if(v["3rd"]) mvpScores[v["3rd"]]+=2;
+        });
+    }
     let mvpSorted=Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]);
     let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody'); tbody.innerHTML="";
     mvpSorted.forEach((entry,i)=>{
@@ -367,6 +406,9 @@ function updateLeaderboards(){
         tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1]}</td>`;
         tbody.appendChild(tr);
     });
+
+    // Save mvpScores to localStorage
+    localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
 
     // Coins
     let coinSorted=Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
