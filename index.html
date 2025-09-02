@@ -340,7 +340,7 @@ endBtn.addEventListener('click',()=>{
 function updateLeaderboards(){
     // MVP
     let mvpScores={}; players.forEach(p=>mvpScores[p]=0);
-    Object.keys(users).forEach(u=>{
+    Object.keys(users).forEach( u=> {
         let v=users[u].votes;
         if(v["1st"]) mvpScores[v["1st"]]+=5;
         if(v["2nd"]) mvpScores[v["2nd"]]+=3;
