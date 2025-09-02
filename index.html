@@ -341,12 +341,10 @@ function updateLeaderboards(){
     // MVP
     let mvpScores={}; players.forEach(p=>mvpScores[p]=0);
     Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin){
-            let v=users[u].votes;
-            if(v["1st"]) mvpScores[v["1st"]]+=5;
-            if(v["2nd"]) mvpScores[v["2nd"]]+=3;
-            if(v["3rd"]) mvpScores[v["3rd"]]+=2;
-        }
+        let v=users[u].votes;
+        if(v["1st"]) mvpScores[v["1st"]]+=5;
+        if(v["2nd"]) mvpScores[v["2nd"]]+=3;
+        if(v["3rd"]) mvpScores[v["3rd"]]+=2;
     });
     let mvpSorted=Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]);
     let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody'); tbody.innerHTML="";
