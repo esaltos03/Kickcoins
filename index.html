@@ -19,12 +19,19 @@ main { padding:20px; }
 select { padding:5px; }
 button { padding:5px 10px; cursor:pointer; border:none; border-radius:5px; }
 button:disabled { background-color: #555; cursor: not-allowed; }
+button:enabled { background-color: #007bff; color: white; }
+button:enabled:hover { background-color: #0056b3; }
 .green { color:#00ff00; }
 .red { color:#ff0000; }
 table { width:100%; border-collapse:collapse; }
 th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 #login-card { max-width:400px; margin:50px auto; }
 .bet-payout { margin-left:10px; font-weight:bold; }
+.prop input[type="number"] { background-color: #2a2a2a; color: white; border: 1px solid #555; padding: 5px; border-radius: 3px; }
+.prop input[type="number"]:focus { border-color: #00ff00; outline: none; }
+select { background-color: #2a2a2a; color: white; border: 1px solid #555; padding: 5px; border-radius: 3px; }
+input[type="text"], input[type="password"] { background-color: #2a2a2a; color: white; border: 1px solid #555; padding: 8px; border-radius: 3px; width: 100%; margin: 5px 0; }
+input[type="text"]:focus, input[type="password"]:focus { border-color: #00ff00; outline: none; }
 </style>
 </head>
 <body>
@@ -37,8 +44,14 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 
 <div id="login-card" class="card">
 <h2>Login / Create Account</h2>
-<label>Username:</label><input type="text" id="login-username"><br><br>
-<label>Password:</label><input type="password" id="login-password"><br><br>
+<div style="margin-bottom: 15px;">
+  <label>Username:</label>
+  <input type="text" id="login-username" placeholder="Enter your username">
+</div>
+<div style="margin-bottom: 15px;">
+  <label>Password:</label>
+  <input type="password" id="login-password" placeholder="Enter your password">
+</div>
 <button id="login-btn">Login</button>
 <button id="create-btn">Create Account</button>
 </div>
@@ -72,10 +85,14 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
     <div class="card">
         <h2>Betting</h2>
         <div id="balance-display"></div>
-        <label>Select Player:</label>
-        <select id="player-select"></select>
+        <div style="margin: 15px 0;">
+            <label>Select Player:</label>
+            <select id="player-select"></select>
+        </div>
         <div id="props-container"></div>
-        <div>Total Potential Payout: <span id="total-payout" class="bet-payout">0</span></div>
+        <div style="margin: 15px 0; font-size: 16px;">
+            Total Potential Payout: <span id="total-payout" class="bet-payout">0</span>
+        </div>
         <button id="submit-bets">Place Bets</button>
     </div>
 </div>

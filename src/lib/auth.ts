@@ -1,20 +1,5 @@
 import { supabase } from './supabase';
-import {
-  createUserProfile,
-  updateUserProfile,
-  getAllUserProfiles,
-  submitVote,
-  getUserVotes,
-  placeBet,
-  getUserBets,
-  getAllBets,
-  resolveBet,
-  saveBetHistory,
-  getUserBetHistory,
-  distributeCoins,
-  resetVoting,
-  clearAvailableCoins
-} from './database';
+import { createUserProfile } from './database';
 
 // Authentication functions
 export async function signUp(username: string, password: string) {
