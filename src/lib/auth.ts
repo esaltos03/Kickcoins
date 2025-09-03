@@ -14,7 +14,7 @@ import {
   distributeCoins,
   resetVoting,
   clearAvailableCoins
-} from './lib/database';
+} from './database';
 
 // Authentication functions
 export async function signUp(username: string, password: string) {
