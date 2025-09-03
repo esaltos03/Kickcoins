@@ -83,16 +83,16 @@ function setupEventListeners() {
 
 // Authentication handlers
 async function handleLogin() {
-  const email = (document.getElementById('login-username') as HTMLInputElement).value;
+  const username = (document.getElementById('login-username') as HTMLInputElement).value;
   const password = (document.getElementById('login-password') as HTMLInputElement).value;
 
-  if (!email || !password) {
-    alert('Please enter both email and password');
+  if (!username || !password) {
+    alert('Please enter both username and password');
     return;
   }
 
   try {
-    const { user } = await signIn(email, password);
+    const { user } = await signIn(username, password);
     if (user) {
       currentUser = user;
       currentProfile = await getUserProfile(user.id);
@@ -101,7 +101,7 @@ async function handleLogin() {
     }
   } catch (error: any) {
     if (error.message.includes('Invalid login credentials')) {
-      alert('Invalid email or password. Please check your credentials and try again.');
+      alert('Invalid username or password. Please check your credentials and try again.');
     } else {
       alert('Login failed: ' + error.message);
     }
@@ -109,12 +109,11 @@ async function handleLogin() {
 }
 
 async function handleCreateAccount() {
-  const email = (document.getElementById('login-username') as HTMLInputElement).value;
+  const username = (document.getElementById('login-username') as HTMLInputElement).value;
   const password = (document.getElementById('login-password') as HTMLInputElement).value;
-  const username = email.split('@')[0]; // Use email prefix as username
 
-  if (!email || !password) {
-    alert('Please enter both email and password');
+  if (!username || !password) {
+    alert('Please enter both username and password');
     return;
   }
 
@@ -124,11 +123,11 @@ async function handleCreateAccount() {
   }
 
   try {
-    await signUp(email, password, username);
+    await signUp(username, password);
     alert('Account created successfully! You can now login with your credentials.');
   } catch (error: any) {
-    if (error.message.includes('User already registered')) {
-      alert('An account with this email already exists. Please try logging in instead.');
+    if (error.message.includes('Username already exists')) {
+      alert('This username is already taken. Please choose a different username.');
     } else {
       alert('Account creation failed: ' + error.message);
     }
