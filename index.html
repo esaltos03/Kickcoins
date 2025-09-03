@@ -112,6 +112,10 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         <button id="end-match" disabled>End Match</button>
         <div id="resolve-bets"></div>
     </div>
+    <div class="card">
+        <h2>Admin Tests</h2>
+        <button id="clear-votes">Clear Mvp Votes</button>
+    </div>
 </div>
 </main>
 
@@ -128,10 +132,9 @@ if(localStorage.getItem('kickcoinsUsers')){
         "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false  },
         "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false  }
     };
-    Object.keys(users).forEach(user => {
-});
-localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
 }
+
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 let mvpScores = localStorage.getItem('mvpScores') 
     ? JSON.parse(localStorage.getItem('mvpScores')) 
@@ -275,6 +278,7 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
 });
 
 /* ----- ADMIN CONTROLS ----- */
+const clearVotes = document.getElementById('clear-votes');
 const openBtn = document.getElementById('open-bets');
 const closeBtn = document.getElementById('close-bets');
 const startBtn = document.getElementById('start-match');
@@ -348,8 +352,11 @@ closeBtn.addEventListener('click',()=>{
 
 startBtn.addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
-    players.forEach(p=>mvpScores[p]=0);
-    localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
+    //players.forEach(p=>mvpScores[p]=0); remove this line to keep cumulative scores
+    Object.values(users).forEach(user => {
+        user.votes = {}; // Reset votes for all users
+    });
+    localStorage.setItem('users', JSON.stringify(users));
     matchActive=true;
     startBtn.disabled=true;
     endBtn.disabled=false;
@@ -385,6 +392,15 @@ endBtn.addEventListener('click',()=>{
     });
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users)); //save state for user voted
     alert("Match ended! Bets resolved.");
+});
+
+clearVotes.addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin"); return; }
+    mvpScores = {};
+    players.forEach(p => mvpScores[p] = 0);
+    localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
+    updateLeaderboards();
+    alert("Cleared all MVP votes.");
 });
 
 /* ----- LEADERBOARDS ----- */
