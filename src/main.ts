@@ -34,6 +34,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       currentUser = user;
       currentProfile = await getUserProfile(user.id);
+      
+      // Create profile if it doesn't exist
+      if (!currentProfile) {
+        const username = user.email?.split('@')[0] || 'user';
+        await createUserProfile(user.id, username);
+        currentProfile = await getUserProfile(user.id);
+      }
+      
       showApp();
     } catch (error) {
       console.error('Error loading user profile:', error);
