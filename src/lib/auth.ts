@@ -1,6 +1,11 @@
 import { supabase } from './supabase';
 
 export async function signUp(email: string, password: string, username: string) {
+  // Validate password length
+  if (password.length < 6) {
+    throw new Error('Password must be at least 6 characters long');
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,

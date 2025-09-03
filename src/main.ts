@@ -86,6 +86,11 @@ async function handleLogin() {
   const email = (document.getElementById('login-username') as HTMLInputElement).value;
   const password = (document.getElementById('login-password') as HTMLInputElement).value;
 
+  if (!email || !password) {
+    alert('Please enter both email and password');
+    return;
+  }
+
   try {
     const { user } = await signIn(email, password);
     if (user) {
@@ -95,7 +100,11 @@ async function handleLogin() {
       alert('Logged in successfully!');
     }
   } catch (error: any) {
-    alert('Login failed: ' + error.message);
+    if (error.message.includes('Invalid login credentials')) {
+      alert('Invalid email or password. Please check your credentials and try again.');
+    } else {
+      alert('Login failed: ' + error.message);
+    }
   }
 }
 
@@ -104,11 +113,25 @@ async function handleCreateAccount() {
   const password = (document.getElementById('login-password') as HTMLInputElement).value;
   const username = email.split('@')[0]; // Use email prefix as username
 
+  if (!email || !password) {
+    alert('Please enter both email and password');
+    return;
+  }
+
+  if (password.length < 6) {
+    alert('Password must be at least 6 characters long');
+    return;
+  }
+
   try {
     await signUp(email, password, username);
-    alert('Account created! Please login.');
+    alert('Account created successfully! You can now login with your credentials.');
   } catch (error: any) {
-    alert('Account creation failed: ' + error.message);
+    if (error.message.includes('User already registered')) {
+      alert('An account with this email already exists. Please try logging in instead.');
+    } else {
+      alert('Account creation failed: ' + error.message);
+    }
   }
 }
 
