@@ -29,29 +29,50 @@ const propsTemplate = ["Assist", "Score", "Anything"];
 // Initialize app
 document.addEventListener('DOMContentLoaded', async () => {
   // Check if user is already logged in
-  const user = await getCurrentUser();
-  if (user) {
-    try {
-      currentUser = user;
-      currentProfile = await getUserProfile(user.id);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.user) {
+      currentUser = session.user;
+      currentProfile = await getUserProfile(session.user.id);
       
       // Create profile if it doesn't exist
       if (!currentProfile) {
-        const username = user.email?.split('@')[0] || 'user';
-        await createUserProfile(user.id, username);
-        currentProfile = await getUserProfile(user.id);
+        const username = session.user.email?.split('@')[0] || 'user';
+        await createUserProfile(session.user.id, username);
+        currentProfile = await getUserProfile(session.user.id);
       }
       
       showApp();
-    } catch (error) {
-      console.error('Error loading user profile:', error);
+    } else {
       showLogin();
     }
-  } else {
+  } catch (error) {
+    console.error('Error loading user session:', error);
     showLogin();
   }
 
   setupEventListeners();
+  
+  // Listen for auth state changes
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      currentUser = session.user;
+      currentProfile = await getUserProfile(session.user.id);
+      
+      if (!currentProfile) {
+        const username = session.user.email?.split('@')[0] || 'user';
+        await createUserProfile(session.user.id, username);
+        currentProfile = await getUserProfile(session.user.id);
+      }
+      
+      showApp();
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      currentProfile = null;
+      showLogin();
+    }
+  });
 });
 
 function setupEventListeners() {
