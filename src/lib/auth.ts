@@ -1,10 +1,24 @@
 import { supabase } from './supabase';
 
-export async function signUp(email: string, password: string, username: string) {
+export async function signUp(username: string, password: string) {
   // Validate password length
   if (password.length < 6) {
     throw new Error('Password must be at least 6 characters long');
   }
+
+  // Check if username already exists
+  const { data: existingUser } = await supabase
+    .from('user_profiles')
+    .select('username')
+    .eq('username', username)
+    .single();
+
+  if (existingUser) {
+    throw new Error('Username already exists');
+  }
+
+  // Create a dummy email using the username
+  const email = `${username}@kickcoins.local`;
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -26,7 +40,10 @@ export async function signUp(email: string, password: string, username: string) 
   return data;
 }
 
-export async function signIn(email: string, password: string) {
+export async function signIn(username: string, password: string) {
+  // Convert username to email format for Supabase auth
+  const email = `${username}@kickcoins.local`;
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
