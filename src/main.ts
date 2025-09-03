@@ -30,13 +30,6 @@ const propsTemplate = ["Assist", "Score", "Anything"];
 document.addEventListener('DOMContentLoaded', async () => {
   // Check if user is already logged in
   try {
-    // Check if Supabase is properly configured
-    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-      console.error('Supabase environment variables are not configured');
-      showLogin();
-      return;
-    }
-
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session?.user) {
