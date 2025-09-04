@@ -408,47 +408,54 @@ function updateLeaderboards(){
 }
 
 // ------------------ HISTORY ------------------
-function updateHistory() {
-    const container = document.getElementById('history-container');
+function updateHistory(){
+    const container = document.getElementById('history-container'); 
     container.innerHTML = "";
-    if (!currentUser) return;
+    if(!currentUser) return;
 
     // Group bets by match
     const betsByMatch = {};
     users[currentUser].bets.forEach(bet => {
-        if (!betsByMatch[bet.match]) betsByMatch[bet.match] = [];
+        if(!betsByMatch[bet.match]) betsByMatch[bet.match] = [];
         betsByMatch[bet.match].push(bet);
     });
 
     Object.keys(betsByMatch).sort((a,b)=>b-a).forEach(matchNum => {
-        // Match header
+        const matchBets = betsByMatch[matchNum];
+
+        // Create match card
         const matchDiv = document.createElement("div");
-        matchDiv.className = "card";
-        matchDiv.innerHTML = `<strong>Match ${matchNum}</strong>`;
+        matchDiv.className = "match-card";
 
-        // Create list for bets
+        // Match header
+        const header = document.createElement("strong");
+        header.textContent = `Match ${matchNum}`;
+        matchDiv.appendChild(header);
+
+        // List of bets
         const ul = document.createElement("ul");
+        let totalBet = 0, totalWon = 0;
 
-        let totalBet = 0;
-        let totalWon = 0;
-
-        betsByMatch[matchNum].forEach(bet => {
+        matchBets.forEach(bet => {
             const li = document.createElement("li");
-            li.innerHTML = `${bet.player} - ${bet.prop} (${bet.odds}x) | Amount: ${bet.amount} | Resolved: ${bet.resolved} | <span style="color:${bet.resolved ? (bet.won ? 'lime' : 'red') : 'yellow'};">${bet.resolved ? (bet.won ? 'Won' : 'Lost') : 'Pending'}</span>`;
+            li.textContent = `${bet.player} - ${bet.prop} (${bet.odds}x) | Amount: ${bet.amount} | Resolved: ${bet.resolved} | ${bet.won ? "Won" : "Lost"}`;
+            li.style.color = bet.won ? "green" : "red";
             ul.appendChild(li);
 
             totalBet += bet.amount;
-            if (bet.resolved && bet.won) totalWon += bet.amount * bet.odds + bet.amount;
+            if(bet.won) totalWon += bet.amount * bet.odds + bet.amount;
         });
 
         matchDiv.appendChild(ul);
 
-        // Total summary
-        const summary = document.createElement("div");
-        let color = totalWon < 10 ? "red" : totalWon === 10 ? "yellow" : "lime";
-        summary.innerHTML = `<strong>Total Coins Bet:</strong> ${totalBet} | <strong>Total Coins Won:</strong> <span style="color:${color}">${totalWon}</span>`;
-        summary.style.marginTop = "5px";
-        matchDiv.appendChild(summary);
+        // Total bet/won line
+        const totalDiv = document.createElement("div");
+        totalDiv.className = "total";
+        totalDiv.textContent = `Total Coins Bet: ${totalBet} | Total Coins Won: ${totalWon}`;
+        if(totalWon < 10) totalDiv.style.color = "red";
+        else if(totalWon === 10) totalDiv.style.color = "yellow";
+        else totalDiv.style.color = "green";
+        matchDiv.appendChild(totalDiv);
 
         container.appendChild(matchDiv);
     });
