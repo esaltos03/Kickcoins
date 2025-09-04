@@ -586,9 +586,47 @@ function updateHistory(){
 
 // ------------------ ADMIN PROP MANAGEMENT ------------------
 function populatePropAdmin(){
-    let sel=document.getElementById('prop-player'); sel.innerHTML="";
-    players.forEach(p=>{ let opt=document.createElement("option"); opt.value=p; opt.text=p; sel.appendChild(opt); });
+    let sel=document.getElementById('prop-player'); 
+    sel.innerHTML="";
+
+    propEntities.forEach(p=>{ 
+        let opt=document.createElement("option"); 
+        opt.value=p; 
+        opt.text=p; 
+        sel.appendChild(opt); 
+    });
+
     renderPropsList();
+
+    // --- ADD ENTITY MANAGEMENT CONTROLS ---
+    let entityContainer = document.getElementById('prop-entity-container');
+    if(!entityContainer){
+        entityContainer = document.createElement('div');
+        entityContainer.id = 'prop-entity-container';
+        entityContainer.style.margin = "10px 0";
+
+        let input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'new-entity';
+        input.placeholder = 'Enter new entity';
+
+        let addBtn = document.createElement('button');
+        addBtn.textContent = 'Add Entity';
+        addBtn.onclick = ()=>{
+            let name = input.value.trim();
+            if(name && !propEntities.includes(name)){
+                propEntities.push(name);
+                localStorage.setItem('propEntities', JSON.stringify(propEntities));
+                input.value="";
+                populatePropAdmin();
+            }
+        };
+
+        entityContainer.appendChild(input);
+        entityContainer.appendChild(addBtn);
+
+        sel.parentNode.insertBefore(entityContainer, sel.nextSibling);
+    }
 }
 function renderPropsList(){
     let player=document.getElementById('prop-player').value;
