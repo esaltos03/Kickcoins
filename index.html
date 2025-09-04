@@ -324,7 +324,7 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
 // ------------------ BETTING ------------------
 function populatePlayers(){
     let sel=document.getElementById('player-select'); sel.innerHTML="";
-    players.forEach(p=>{
+    propEntities.forEach(p=>{
         let opt=document.createElement("option"); opt.value=p; opt.text=p; sel.appendChild(opt);
     });
     sel.addEventListener('change', populateProps);
