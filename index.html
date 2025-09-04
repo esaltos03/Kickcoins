@@ -309,8 +309,6 @@ document.getElementById('open-bets').addEventListener('click',()=>{
     });
     updateUI();
 });
-
-// ---- FIXED: Close Bets ----
 document.getElementById('close-bets').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     bettingOpen=false; 
@@ -318,7 +316,7 @@ document.getElementById('close-bets').addEventListener('click',()=>{
     document.getElementById('close-bets').disabled=true;
     document.getElementById('start-match').disabled=false;
 
-    // ONLY zero out availableCoins, do NOT subtract from totalCoins
+    // FIX: Zero out availableCoins WITHOUT subtracting from totalCoins
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
             users[u].availableCoins = 0;
@@ -328,7 +326,6 @@ document.getElementById('close-bets').addEventListener('click',()=>{
     updateUI(); 
     updateHistory();
 });
-
 document.getElementById('start-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     matchActive=true; document.getElementById('start-match').disabled=true; document.getElementById('end-match').disabled=false;
@@ -380,7 +377,7 @@ function resolveBet(username, bet, won){
         let payout = bet.amount * bet.odds + bet.amount;
         users[username].totalCoins += payout;
     }
-    users[username].availableCoins -= bet.amount;
+    // Removed subtraction from availableCoins here
     updateUI();
     updateHistory();
     updateLeaderboards();
