@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kickcoins - Fantasy Betting</title>
 <style>
-/* --- STYLES SAME AS ORIGINAL --- */
 body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; margin:0; padding:0; }
 header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background-color:#1a1a1a; }
 header .account { display:flex; align-items:center; gap:15px; }
@@ -205,6 +204,7 @@ function updateUI(){
     let acc=users[currentUser];
     document.getElementById('account-info').innerHTML=`${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+    // Admin tab visibility
     const adminTab = document.querySelector('.tab[data-tab="admin"]');
     const adminContent = document.getElementById('admin-tab');
     if(users[currentUser].isAdmin){
@@ -295,8 +295,14 @@ document.getElementById('open-bets').addEventListener('click',()=>{
     // Give all users 10 coins from totalCoins
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
-            let give = 10;
-            users[u].availableCoins = give;
+            let give=10;
+            if(users[u].totalCoins >= give){
+                users[u].totalCoins -= give;
+                users[u].availableCoins += give;
+            } else {
+                users[u].availableCoins += users[u].totalCoins;
+                users[u].totalCoins = 0;
+            }
             users[u].voted=false;
         }
     });
@@ -306,7 +312,7 @@ document.getElementById('close-bets').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     bettingOpen=false; document.getElementById('open-bets').disabled=false; document.getElementById('close-bets').disabled=true;
     document.getElementById('start-match').disabled=false;
-    // Reset available coins after bets closed
+    // Reset remaining available coins
     Object.keys(users).forEach(u=>{ if(!users[u].isAdmin) users[u].availableCoins=0; });
     updateUI(); updateHistory();
 });
@@ -314,140 +320,95 @@ document.getElementById('start-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     matchActive=true; document.getElementById('start-match').disabled=true; document.getElementById('end-match').disabled=false;
     updateUI();
+    // Show unresolved bets for admin to review
     reviewBetsForAdmin();
 });
 document.getElementById('end-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     matchActive=false; document.getElementById('end-match').disabled=true; document.getElementById('start-match').disabled=false;
-
-    // Tally votes first
+    // Tally votes safely
     let matchResult={match:currentMatch, results:[]};
     Object.keys(users).forEach(u=>{
-        let v=users[u].votesThisMatch;
-        if(v["1st"]) { mvpScores[v["1st"]] +=5; matchResult.results.push({player:v["1st"], points:5, place:"1st"}); }
-        if(v["2nd"]) { mvpScores[v["2nd"]] +=3; matchResult.results.push({player:v["2nd"], points:3, place:"2nd"}); }
-        if(v["3rd"]) { mvpScores[v["3rd"]] +=2; matchResult.results.push({player:v["3rd"], points:2, place:"3rd"}); }
+        if(users[u].isAdmin) return;
+        let v = users[u].votesThisMatch;
+        if(v["1st"]) { 
+            mvpScores[v["1st"]] = (mvpScores[v["1st"]] || 0) + 5;
+            matchResult.results.push({player:v["1st"],points:5,place:"1st"}); 
+        }
+        if(v["2nd"]) { 
+            mvpScores[v["2nd"]] = (mvpScores[v["2nd"]] || 0) + 3;
+            matchResult.results.push({player:v["2nd"],points:3,place:"2nd"}); 
+        }
+        if(v["3rd"]) { 
+            mvpScores[v["3rd"]] = (mvpScores[v["3rd"]] || 0) + 2;
+            matchResult.results.push({player:v["3rd"],points:2,place:"3rd"}); 
+        }
+        users[u].votesThisMatch = {}; 
+        users[u].voted = false;
     });
-    // Clear votes
-    Object.keys(users).forEach(u=>{ users[u].votesThisMatch={}; users[u].voted=false; });
-
-    // Save history
     mvpHistory.push(matchResult);
     localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
     localStorage.setItem('mvpHistory', JSON.stringify(mvpHistory));
-
-    updateLeaderboards(); updateUI(); alert("Match ended, MVP tallied!");
+    updateLeaderboards();
+    updateHistory();
+    alert("Match ended and MVP votes tallied!");
 });
 
-// ------------------ REVIEW & RESOLVE BETS ------------------
+// ------------------ BET RESOLUTION ------------------
 function reviewBetsForAdmin(){
-    const resolveDiv = document.getElementById('resolve-bets');
-    resolveDiv.innerHTML="<h3>Resolve Bets</h3>";
+    const div=document.getElementById('resolve-bets'); div.innerHTML="";
     Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin){
-            users[u].bets.filter(b=>!b.resolved).forEach(bet=>{
-                const div=document.createElement('div');
-                div.innerHTML=`${u}: ${bet.player} - ${bet.prop} | Amount: ${bet.amount} | Odds: ${bet.odds}`;
-                const winBtn=document.createElement('button'); winBtn.textContent="Win"; winBtn.onclick=()=>resolveBet(u,bet,true);
-                const loseBtn=document.createElement('button'); loseBtn.textContent="Lose"; loseBtn.onclick=()=>resolveBet(u,bet,false);
-                div.appendChild(winBtn); div.appendChild(loseBtn);
-                resolveDiv.appendChild(div);
-            });
-        }
+        if(users[u].isAdmin) return;
+        users[u].bets.forEach((b,i)=>{
+            if(!b.resolved){
+                let btnWin=document.createElement("button"); btnWin.textContent=`${b.player} ${b.prop} WIN`; btnWin.onclick=()=>{ resolveBet(u,i,true); };
+                let btnLose=document.createElement("button"); btnLose.textContent=`${b.player} ${b.prop} LOSE`; btnLose.onclick=()=>{ resolveBet(u,i,false); };
+                div.appendChild(btnWin); div.appendChild(btnLose); div.appendChild(document.createElement("br"));
+            }
+        });
     });
 }
-function resolveBet(user,bet,won){
+function resolveBet(username,index,won){
+    let bet=users[username].bets[index];
     if(bet.resolved) return;
     bet.resolved=true; bet.won=won;
-    if(won){
-        users[user].totalCoins += bet.amount*bet.odds + bet.amount;
-    }
+    if(won){ let gain = bet.amount*bet.odds; users[username].totalCoins += gain; }
+    // Prevent negative coins
+    users[username].availableCoins = Math.max(0, users[username].availableCoins - bet.amount);
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
     reviewBetsForAdmin(); updateUI(); updateHistory();
 }
 
 // ------------------ LEADERBOARDS ------------------
 function updateLeaderboards(){
-    // MVP Leaderboard
-    const tbody=document.querySelector("#mvp-leaderboard tbody"); tbody.innerHTML="";
-    let sorted=Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]);
-    sorted.forEach((entry,i)=>{
-        let tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td>${entry[0]}</td><td>${entry[1]}</td>`;
+    // MVP leaderboard
+    let tbody=document.querySelector("#mvp-leaderboard tbody"); tbody.innerHTML="";
+    let sorted=Object.keys(mvpScores).sort((a,b)=>mvpScores[b]-mvpScores[a]);
+    sorted.forEach((p,i)=>{
+        let tr=document.createElement("tr");
+        tr.innerHTML=`<td>${i+1}</td><td>${p}</td><td>${mvpScores[p]}</td>`;
         tbody.appendChild(tr);
     });
-    // Coin Leaderboard
-    const ctbody=document.querySelector("#coin-leaderboard tbody"); ctbody.innerHTML="";
-    let sortedCoins=Object.entries(users).filter(u=>!u[1].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins);
-    sortedCoins.forEach((entry,i)=>{
-        let tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}</td><td>${entry[0]}</td><td>${entry[1].totalCoins}</td><td>${entry[1].availableCoins}</td>`;
-        ctbody.appendChild(tr);
+    // Coin leaderboard
+    let tbodyCoins=document.querySelector("#coin-leaderboard tbody"); tbodyCoins.innerHTML="";
+    let coinSorted=Object.keys(users).filter(u=>!users[u].isAdmin).sort((a,b)=>users[b].totalCoins-users[a].totalCoins);
+    coinSorted.forEach((u,i)=>{
+        let tr=document.createElement("tr");
+        tr.innerHTML=`<td>${i+1}</td><td>${u}</td><td>${users[u].totalCoins}</td><td>${users[u].isAdmin?"Yes":"No"}</td>`;
+        tbodyCoins.appendChild(tr);
     });
 }
+
+// ------------------ HISTORY ------------------
 function updateHistory(){
-    const container=document.getElementById('history-container'); container.innerHTML="";
-    Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin){
-            users[u].bets.forEach(b=>{
-                let div=document.createElement('div'); div.textContent=`${u} | Match ${b.match} | ${b.player} - ${b.prop} | Amount: ${b.amount} | Odds: ${b.odds} | Resolved: ${b.resolved} | Won: ${b.won}`;
-                container.appendChild(div);
-            });
-        }
-    });
-
-    const mvpDiv=document.getElementById('mvp-history'); mvpDiv.innerHTML="";
+    let histDiv=document.getElementById('history-container'); histDiv.innerHTML="";
     mvpHistory.forEach(m=>{
-        let d=document.createElement('div'); d.innerHTML=`<b>Match ${m.match}</b>: ${m.results.map(r=>r.player+" ("+r.points+" pts)").join(", ")}`;
-        mvpDiv.appendChild(d);
+        let div=document.createElement("div"); div.className="card";
+        div.innerHTML=`<strong>Match ${m.match}</strong><br>${m.results.map(r=>`${r.place}: ${r.player} +${r.points}`).join("<br>")}`;
+        histDiv.appendChild(div);
     });
 }
-
-// ------------------ PROPS ADMIN ------------------
-function populatePropAdmin(){
-    let sel=document.getElementById('prop-player'); sel.innerHTML="";
-    players.forEach(p=>{
-        let opt=document.createElement('option'); opt.value=p; opt.text=p; sel.appendChild(opt);
-    });
-}
-document.getElementById('add-prop').addEventListener('click',()=>{
-    let player=document.getElementById('prop-player').value;
-    let name=document.getElementById('new-prop').value;
-    let odds=Number(document.getElementById('new-odds').value);
-    if(name && odds>0){
-        propsTemplate[player].push({name:name, odds:odds});
-        localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
-        renderPropsList();
-        populateProps();
-    }
-});
-function renderPropsList(){
-    const list=document.getElementById('props-list'); list.innerHTML="";
-    players.forEach(p=>{
-        propsTemplate[p].forEach((prop,i)=>{
-            let div=document.createElement('div'); div.textContent=`${p}: ${prop.name} (${prop.odds}x)`;
-            const btn=document.createElement('button'); btn.textContent="Remove"; btn.onclick=()=>{
-                propsTemplate[p].splice(i,1); localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate)); renderPropsList(); populateProps();
-            };
-            div.appendChild(btn); list.appendChild(div);
-        });
-    });
-}
-
-// ------------------ CLEAR MVP VOTES ------------------
-document.getElementById('clear-votes').addEventListener('click',()=>{
-    Object.keys(users).forEach(u=>{ users[u].votesThisMatch={}; users[u].voted=false; });
-    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-    updateLeaderboards(); updateHistory();
-});
-
-// ------------------ INITIAL SETUP ------------------
-showLogin(!currentUser);
-updateUI();
-populateVoting();
-populatePlayers();
-updateLeaderboards();
-updateHistory();
-populatePropAdmin();
-
 </script>
+
 </body>
 </html>
