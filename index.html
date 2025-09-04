@@ -430,11 +430,25 @@ function updateLeaderboards(){
         tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1]}</td>`; tbody.appendChild(tr);
     });
     const mh=document.getElementById('mvp-history'); mh.innerHTML="";
-    mvpHistory.forEach(m=>{
-        let div=document.createElement("div"); div.className="card";
-        div.innerHTML=`<strong>Match ${m.match}</strong><br>`+m.results.map(r=>`${r.place}: ${r.player} (+${r.points})`).join("<br>");
-        mh.appendChild(div);
+mvpHistory.forEach(m=>{
+    let div=document.createElement("div"); div.className="mvp-card";
+    div.innerHTML = `<strong>Match ${m.match}</strong>`;
+    m.results.forEach(r=>{
+        let emoji = '';
+        switch(r.points){
+            case 5: emoji='🥇'; break;
+            case 3: emoji='🥈'; break;
+            case 2: emoji='🥉'; break;
+            default: 
+                emoji = r.points >= 1 && r.points <= 7 ? '🪨' : '🍆';
+        }
+        let resDiv = document.createElement('div');
+        resDiv.className='result';
+        resDiv.textContent = `${emoji} ${r.place}: ${r.player} (+${r.points})`;
+        div.appendChild(resDiv);
     });
+    mh.appendChild(div);
+});
     let ct=document.getElementById('coin-leaderboard').querySelector('tbody'); ct.innerHTML="";
     Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins).forEach((entry,i)=>{
         let tr=document.createElement("tr");
