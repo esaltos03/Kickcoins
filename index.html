@@ -413,7 +413,7 @@ function updateHistory(){
     if(!currentUser) return;
     users[currentUser].bets.filter(b=>b.match===currentMatch).forEach(bet=>{
         let div=document.createElement("div"); div.className="card";
-        div.innerHTML=`Match ${bet.match} | Bet: ${bet.player} - ${bet.prop} | Amount: ${bet.amount} | Odds: ${bet.odds}x | Resolved: ${bet.resolved} | Won: ${bet.won}`;
+        div.innerHTML = `Match ${bet.match} | Bet: ${bet.player} - ${bet.prop} | Amount: ${bet.amount} | Odds: ${bet.odds}x | Resolved: ${bet.resolved} | <span style="color:${bet.resolved ? (bet.won ? 'lime' : 'red') : 'yellow'};">${bet.resolved ? (bet.won ? 'Won' : 'Lost') : 'Pending'}</span>`;
         container.appendChild(div);
     });
 }
