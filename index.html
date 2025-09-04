@@ -309,24 +309,22 @@ document.getElementById('open-bets').addEventListener('click',()=>{
     });
     updateUI();
 });
-
-// FIXED close-bets logic
 document.getElementById('close-bets').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
-    bettingOpen=false; document.getElementById('open-bets').disabled=false; document.getElementById('close-bets').disabled=true;
+    bettingOpen=false; 
+    document.getElementById('open-bets').disabled=false; 
+    document.getElementById('close-bets').disabled=true;
     document.getElementById('start-match').disabled=false;
-    // Subtract remaining availableCoins without going negative
+
+    // FIX: Zero out availableCoins WITHOUT subtracting from totalCoins
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
-            let available = users[u].availableCoins;
-            if(available > 0){
-                users[u].totalCoins -= available;
-                if(users[u].totalCoins < 0) users[u].totalCoins = 0;
-                users[u].availableCoins = 0;
-            }
+            users[u].availableCoins = 0;
         }
     });
-    updateUI(); updateHistory();
+
+    updateUI(); 
+    updateHistory();
 });
 document.getElementById('start-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
