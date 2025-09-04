@@ -560,14 +560,21 @@ function updateHistory(){
         let totalBet = 0, totalWon = 0;
 
         matchBets.forEach(bet => {
-            const li = document.createElement("li");
-            li.textContent = `${bet.player} - ${bet.prop} (${bet.odds}x) | Amount: ${bet.amount} | Resolved: ${bet.resolved} | ${bet.won ? "Won" : "Lost"}`;
-            li.style.color = bet.won ? "green" : "red";
-            ul.appendChild(li);
+    const li = document.createElement("li");
 
-            totalBet += bet.amount;
-            if(bet.won) totalWon += bet.amount * bet.odds + bet.amount;
-        });
+    // If resolved, show Won/Lost; if not, show Pending
+    li.textContent = `${bet.player} - ${bet.prop} (${bet.odds}x) | Amount: ${bet.amount} | Resolved: ${bet.resolved} | ${bet.resolved ? (bet.won ? "Won" : "Lost") : "Pending"}`;
+
+    // Set color based on status
+    if(!bet.resolved) li.style.color = "yellow";       // pending
+    else li.style.color = bet.won ? "green" : "red";   // resolved
+
+    ul.appendChild(li);
+
+    // Total calculations only count resolved bets
+    totalBet += bet.amount;
+    if(bet.resolved && bet.won) totalWon += bet.amount * bet.odds + bet.amount;
+});
 
         matchDiv.appendChild(ul);
 
