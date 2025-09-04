@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kickcoins - Fantasy Betting</title>
 <style>
+/* --- STYLES SAME AS ORIGINAL --- */
 body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; margin:0; padding:0; }
 header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background-color:#1a1a1a; }
 header .account { display:flex; align-items:center; gap:15px; }
@@ -82,23 +83,27 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 <!-- Leaderboards -->
 <div class="tab-content" id="leaderboard-tab" style="display:none;">
     <div class="card">
-        <h2>MVP Leaderboard</h2>
+        <h2>Overall MVP Leaderboard</h2>
         <table id="mvp-leaderboard">
             <thead><tr><th>Place</th><th>Player</th><th>Points</th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
     <div class="card">
-        <h2>Coin Leaderboard</h2>
-        <table id="coin-leaderboard">
-            <thead><tr><th>Place</th><th>Player</th><th>Coins</th><th>Admin</th></tr></thead>
-            <tbody></tbody>
-        </table>
+        <h2>MVP History per Match</h2>
+        <div id="mvp-history"></div>
     </div>
 </div>
 
 <!-- Bet History -->
 <div class="tab-content" id="history-tab" style="display:none;">
+    <div class="card">
+        <h2>Betting Leaderboard</h2>
+        <table id="coin-leaderboard">
+            <thead><tr><th>Place</th><th>Player</th><th>Coins</th><th>Admin</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
     <div class="card" id="history-container"></div>
 </div>
 
@@ -129,40 +134,36 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 </main>
 
 <script>
-/* ----- STORAGE SETUP ----- */
-if(localStorage.getItem('kickcoinsUsers')){
-    var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
-}else{
+// ------------------ STORAGE ------------------
+if(!localStorage.getItem('kickcoinsUsers')){
     var users = {
-        "Erick": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false },
-        "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false },
-        "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votes:{}, bets:[], mvpPoints:0, history:[], voted:false }
+        "Erick": { password:"pass", totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false },
+        "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false },
+        "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false }
     };
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+}else{
+    var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
 }
 
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
 let mvpScores = localStorage.getItem('mvpScores') ? JSON.parse(localStorage.getItem('mvpScores')) : {};
 players.forEach(p=>{ if(!mvpScores[p]) mvpScores[p]=0; });
 
-// Props per player
 let propsTemplate = localStorage.getItem('propsTemplate') ? JSON.parse(localStorage.getItem('propsTemplate')) : {};
 players.forEach(p=>{
-    if(!propsTemplate[p]) {
-        propsTemplate[p] = [
-            { name: "Score", odds: 4 },
-            { name: "Assist", odds: 3 },
-            { name: "Anything", odds: 2 }
-        ];
-    }
+    if(!propsTemplate[p]) propsTemplate[p] = [{name:"Score", odds:4},{name:"Assist", odds:3},{name:"Anything", odds:2}];
 });
 localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
 
-let currentUser = null;
-let matchActive = false;
-let bettingOpen = false;
+let mvpHistory = localStorage.getItem('mvpHistory') ? JSON.parse(localStorage.getItem('mvpHistory')) : [];
+let currentMatch = localStorage.getItem('currentMatch') ? parseInt(localStorage.getItem('currentMatch')) : 0;
 
-/* ----- LOGIN / CREATE ----- */
+let currentUser=null;
+let matchActive=false;
+let bettingOpen=false;
+
+// ------------------ LOGIN ------------------
 function showLogin(show=true){
     document.getElementById('login-card').style.display=show?'block':'none';
     document.getElementById('app').style.display=!show?'block':'none';
@@ -180,15 +181,13 @@ document.getElementById('create-btn').addEventListener('click',()=>{
     const user=document.getElementById('login-username').value;
     const pass=document.getElementById('login-password').value;
     if(users[user]){ alert("User exists"); return; }
-    users[user]={password:pass,totalCoins:100,availableCoins:0,votes:{},bets:[],mvpPoints:0,history:[],voted:false};
+    users[user]={password:pass,totalCoins:100,availableCoins:0,votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false};
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
     alert("Account created! You can now login.");
 });
-document.getElementById('logout-btn').addEventListener('click',()=>{
-    currentUser=null; showLogin(true);
-});
+document.getElementById('logout-btn').addEventListener('click',()=>{ currentUser=null; showLogin(true); });
 
-/* ----- TAB NAV ----- */
+// ------------------ TAB NAV ------------------
 document.querySelectorAll('.tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
         document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -200,29 +199,26 @@ document.querySelectorAll('.tab').forEach(tab=>{
     });
 });
 
-/* ----- ACCOUNT DISPLAY ----- */
+// ------------------ ACCOUNT DISPLAY ------------------
 function updateUI(){
     if(!currentUser) return;
     let acc=users[currentUser];
-    let html=`${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
-    document.getElementById('account-info').innerHTML=html;
+    document.getElementById('account-info').innerHTML=`${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-
-    // ===== ADMIN TAB VISIBILITY FIX =====
+    // Admin tab visibility
     const adminTab = document.querySelector('.tab[data-tab="admin"]');
     const adminContent = document.getElementById('admin-tab');
     if(users[currentUser].isAdmin){
         adminTab.style.display = "block";
     }else{
-        adminTab.style.display = "none";
-        adminContent.style.display = "none";
+        adminTab.style.display = "none"; adminContent.style.display = "none";
         if(document.querySelector(".tab.active").dataset.tab === "admin"){
             document.querySelector('.tab[data-tab="vote"]').click();
         }
     }
 }
 
-/* ----- MVP VOTING ----- */
+// ------------------ MVP VOTING ------------------
 function populateVoting(){
     ["vote1","vote2","vote3"].forEach(id=>{
         let sel=document.getElementById(id); sel.innerHTML="";
@@ -238,14 +234,14 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
     let second=document.getElementById('vote2').value;
     let third=document.getElementById('vote3').value;
     if(new Set([first,second,third]).size<3){ alert("Cannot vote same player multiple times."); return; }
-    users[currentUser].votes={"1st":first,"2nd":second,"3rd":third};
-    updateLeaderboards(); updateUI();
+    users[currentUser].votesThisMatch={"1st":first,"2nd":second,"3rd":third};
     users[currentUser].voted=true;
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
     alert("Votes submitted!");
+    updateLeaderboards();
 });
 
-/* ----- BETTING SYSTEM ----- */
+// ------------------ BETTING ------------------
 function populatePlayers(){
     let sel=document.getElementById('player-select'); sel.innerHTML="";
     players.forEach(p=>{
@@ -275,8 +271,6 @@ function updatePotentialPayout(){
     const payoutDisplay=document.getElementById('total-payout');
     payoutDisplay.textContent=total; payoutDisplay.style.color=total>50?'green':'yellow';
 }
-
-/* ----- SUBMIT BETS ----- */
 document.getElementById('submit-bets').addEventListener('click',()=>{
     if(!bettingOpen){ alert("Betting not open."); return; }
     let container=document.getElementById('props-container'); let acc=users[currentUser];
@@ -287,14 +281,93 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
         if(amt>0){
             if(acc.availableCoins>=amt){
                 acc.availableCoins-=amt;
-                acc.bets.push({player:document.getElementById('player-select').value,prop:propName,amount:amt,odds:odds,resolved:false,won:false});
+                acc.bets.push({match:currentMatch, player:document.getElementById('player-select').value,prop:propName,amount:amt,odds:odds,resolved:false,won:false});
             }else{ alert("Cannot bet more than available balance"); }
         }
     }
-    updateUI(); updatePotentialPayout(); alert("Bets placed!");
+    updateUI(); updatePotentialPayout(); updateHistory(); alert("Bets placed!");
 });
 
-/* ----- ADMIN PROP MANAGEMENT ----- */
+// ------------------ ADMIN BET CONTROL ------------------
+document.getElementById('open-bets').addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin) return;
+    bettingOpen=true; document.getElementById('open-bets').disabled=true; document.getElementById('close-bets').disabled=false;
+    currentMatch+=1; localStorage.setItem('currentMatch', currentMatch);
+    // Give all users 10 coins available
+    Object.keys(users).forEach(u=>{
+        if(!users[u].isAdmin) users[u].availableCoins=10; users[u].voted=false;
+    });
+    updateUI();
+});
+document.getElementById('close-bets').addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin) return;
+    bettingOpen=false; document.getElementById('open-bets').disabled=false; document.getElementById('close-bets').disabled=true;
+    document.getElementById('start-match').disabled=false;
+    // Reset remaining available coins
+    Object.keys(users).forEach(u=>{ if(!users[u].isAdmin) users[u].availableCoins=0; });
+    updateUI(); updateHistory();
+});
+document.getElementById('start-match').addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin) return;
+    matchActive=true; document.getElementById('start-match').disabled=true; document.getElementById('end-match').disabled=false;
+    updateUI();
+});
+document.getElementById('end-match').addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin) return;
+    matchActive=false; document.getElementById('end-match').disabled=true; document.getElementById('start-match').disabled=false;
+    // Tally votes
+    let matchResult={match:currentMatch, results:[]};
+    Object.keys(users).forEach(u=>{
+        let v=users[u].votesThisMatch;
+        if(v["1st"]) { mvpScores[v["1st"]]+=5; matchResult.results.push({player:v["1st"],points:5,place:"1st"}); }
+        if(v["2nd"]) { mvpScores[v["2nd"]]+=3; matchResult.results.push({player:v["2nd"],points:3,place:"2nd"}); }
+        if(v["3rd"]) { mvpScores[v["3rd"]]+=2; matchResult.results.push({player:v["3rd"],points:2,place:"3rd"}); }
+        users[u].votesThisMatch={}; users[u].voted=false;
+    });
+    mvpHistory.push(matchResult);
+    localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
+    localStorage.setItem('mvpHistory', JSON.stringify(mvpHistory));
+    updateLeaderboards(); updateUI(); alert("Match ended, MVP tallied!");
+});
+
+// ------------------ LEADERBOARDS ------------------
+function updateLeaderboards(){
+    // Overall MVP leaderboard
+    let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody'); tbody.innerHTML="";
+    Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]).forEach((entry,i)=>{
+        let tr=document.createElement("tr");
+        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
+        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1]}</td>`; tbody.appendChild(tr);
+    });
+    // Per-match MVP history
+    const mh=document.getElementById('mvp-history'); mh.innerHTML="";
+    mvpHistory.forEach(m=>{
+        let div=document.createElement("div"); div.className="card";
+        div.innerHTML=`<strong>Match ${m.match}</strong><br>`+m.results.map(r=>`${r.place}: ${r.player} (+${r.points})`).join("<br>");
+        mh.appendChild(div);
+    });
+    // Coin leaderboard (betting tab)
+    let ct=document.getElementById('coin-leaderboard').querySelector('tbody'); ct.innerHTML="";
+    Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins).forEach((entry,i)=>{
+        let tr=document.createElement("tr");
+        let delBtn=users[currentUser]&&users[currentUser].isAdmin?`<button onclick="deleteUser('${entry[0]}')">Delete</button>`:"";
+        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
+        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1].totalCoins}</td><td>${delBtn}</td>`; ct.appendChild(tr);
+    });
+}
+
+// ------------------ HISTORY ------------------
+function updateHistory(){
+    const container=document.getElementById('history-container'); container.innerHTML="";
+    if(!currentUser) return;
+    users[currentUser].bets.filter(b=>b.match===currentMatch).forEach(bet=>{
+        let div=document.createElement("div"); div.className="card";
+        div.innerHTML=`Match ${bet.match} | Bet: ${bet.player} - ${bet.prop} | Amount: ${bet.amount} | Odds: ${bet.odds}x | Resolved: ${bet.resolved} | Won: ${bet.won}`;
+        container.appendChild(div);
+    });
+}
+
+// ------------------ ADMIN PROP MANAGEMENT ------------------
 function populatePropAdmin(){
     let sel=document.getElementById('prop-player'); sel.innerHTML="";
     players.forEach(p=>{ let opt=document.createElement("option"); opt.value=p; opt.text=p; sel.appendChild(opt); });
@@ -314,7 +387,7 @@ function renderPropsList(){
     });
 }
 document.getElementById('add-prop').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
+    if(!currentUser || !users[currentUser].isAdmin) return;
     let player=document.getElementById('prop-player').value;
     let name=document.getElementById('new-prop').value.trim();
     let odds=parseInt(document.getElementById('new-odds').value);
@@ -326,71 +399,21 @@ document.getElementById('add-prop').addEventListener('click',()=>{
     }
 });
 
-/* ----- LEADERBOARDS ----- */
-function updateLeaderboards(){
-    if(matchActive){
-        Object.keys(users).forEach(u=>{
-            let v=users[u].votes;
-            if(v["1st"]) mvpScores[v["1st"]]+=5;
-            if(v["2nd"]) mvpScores[v["2nd"]]+=3;
-            if(v["3rd"]) mvpScores[v["3rd"]]+=2;
-        });
-    }
-    localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
-    let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody'); tbody.innerHTML="";
-    Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]).forEach((entry,i)=>{
-        let tr=document.createElement("tr");
-        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
-        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1]}</td>`; tbody.appendChild(tr);
-    });
-    let ct=document.getElementById('coin-leaderboard').querySelector('tbody'); ct.innerHTML="";
-    Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins).forEach((entry,i)=>{
-        let tr=document.createElement("tr");
-        let delBtn=users[currentUser]&&users[currentUser].isAdmin?`<button onclick="deleteUser('${entry[0]}')">Delete</button>`:"";
-        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
-        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1].totalCoins}</td><td>${delBtn}</td>`; ct.appendChild(tr);
-    });
-}
-
-/* ----- DELETE USER ----- */
+// ------------------ DELETE USER ------------------
 function deleteUser(username){
-    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
+    if(!currentUser || !users[currentUser].isAdmin) return;
     if(confirm(`Admin, confirm delete ${username}?`)){ delete users[username]; updateLeaderboards(); updateUI(); alert(`${username} deleted`); }
 }
 
-/* ----- BET HISTORY ----- */
-function updateHistory(){
-    const container=document.getElementById('history-container'); container.innerHTML="";
-    if(!currentUser) return;
-    users[currentUser].bets.forEach(bet=>{
-        let div=document.createElement("div"); div.className="card";
-        div.innerHTML=`Bet: ${bet.player} - ${bet.prop} | Amount: ${bet.amount} | Odds: ${bet.odds}x | Resolved: ${bet.resolved} | Won: ${bet.won}`;
-        container.appendChild(div);
-    });
-}
-
-/* ----- ADMIN MATCH CONTROL ----- */
-document.getElementById('open-bets').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
-    bettingOpen=true; document.getElementById('open-bets').disabled=true; document.getElementById('close-bets').disabled=false;
-});
-document.getElementById('close-bets').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
-    bettingOpen=false; document.getElementById('open-bets').disabled=false; document.getElementById('close-bets').disabled=true; document.getElementById('start-match').disabled=false;
-});
-document.getElementById('start-match').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
-    matchActive=true; document.getElementById('start-match').disabled=true; document.getElementById('end-match').disabled=false;
-});
-document.getElementById('end-match').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
-    matchActive=false; document.getElementById('end-match').disabled=true; document.getElementById('start-match').disabled=false;
-});
+// ------------------ CLEAR VOTES ------------------
 document.getElementById('clear-votes').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
-    Object.keys(users).forEach(u=>users[u].votes={}); localStorage.removeItem('mvpScores'); mvpScores={}; updateLeaderboards(); alert("Votes cleared.");
+    if(!currentUser || !users[currentUser].isAdmin) return;
+    Object.keys(users).forEach(u=>users[u].votesThisMatch={});
+    mvpScores={}; mvpHistory=[]; currentMatch=0;
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+    localStorage.removeItem('mvpScores'); localStorage.removeItem('mvpHistory'); localStorage.setItem('currentMatch', currentMatch);
+    updateLeaderboards(); updateUI(); alert("Votes cleared.");
 });
-
 </script>
 </body>
 </html>
