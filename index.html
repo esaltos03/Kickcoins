@@ -207,6 +207,19 @@ function updateUI(){
     let html=`${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
     document.getElementById('account-info').innerHTML=html;
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+
+    // ===== ADMIN TAB VISIBILITY FIX =====
+    const adminTab = document.querySelector('.tab[data-tab="admin"]');
+    const adminContent = document.getElementById('admin-tab');
+    if(users[currentUser].isAdmin){
+        adminTab.style.display = "block";
+    }else{
+        adminTab.style.display = "none";
+        adminContent.style.display = "none";
+        if(document.querySelector(".tab.active").dataset.tab === "admin"){
+            document.querySelector('.tab[data-tab="vote"]').click();
+        }
+    }
 }
 
 /* ----- MVP VOTING ----- */
@@ -301,6 +314,7 @@ function renderPropsList(){
     });
 }
 document.getElementById('add-prop').addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
     let player=document.getElementById('prop-player').value;
     let name=document.getElementById('new-prop').value.trim();
     let odds=parseInt(document.getElementById('new-odds').value);
@@ -340,6 +354,7 @@ function updateLeaderboards(){
 
 /* ----- DELETE USER ----- */
 function deleteUser(username){
+    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
     if(confirm(`Admin, confirm delete ${username}?`)){ delete users[username]; updateLeaderboards(); updateUI(); alert(`${username} deleted`); }
 }
 
@@ -355,12 +370,26 @@ function updateHistory(){
 }
 
 /* ----- ADMIN MATCH CONTROL ----- */
-document.getElementById('open-bets').addEventListener('click',()=>{ bettingOpen=true; document.getElementById('open-bets').disabled=true; document.getElementById('close-bets').disabled=false; });
-document.getElementById('close-bets').addEventListener('click',()=>{ bettingOpen=false; document.getElementById('open-bets').disabled=false; document.getElementById('close-bets').disabled=true; document.getElementById('start-match').disabled=false; });
-document.getElementById('start-match').addEventListener('click',()=>{ matchActive=true; document.getElementById('start-match').disabled=true; document.getElementById('end-match').disabled=false; });
-document.getElementById('end-match').addEventListener('click',()=>{ matchActive=false; document.getElementById('end-match').disabled=true; document.getElementById('start-match').disabled=false; });
-
-document.getElementById('clear-votes').addEventListener('click',()=>{ Object.keys(users).forEach(u=>users[u].votes={}); localStorage.removeItem('mvpScores'); mvpScores={}; updateLeaderboards(); alert("Votes cleared."); });
+document.getElementById('open-bets').addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
+    bettingOpen=true; document.getElementById('open-bets').disabled=true; document.getElementById('close-bets').disabled=false;
+});
+document.getElementById('close-bets').addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
+    bettingOpen=false; document.getElementById('open-bets').disabled=false; document.getElementById('close-bets').disabled=true; document.getElementById('start-match').disabled=false;
+});
+document.getElementById('start-match').addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
+    matchActive=true; document.getElementById('start-match').disabled=true; document.getElementById('end-match').disabled=false;
+});
+document.getElementById('end-match').addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
+    matchActive=false; document.getElementById('end-match').disabled=true; document.getElementById('start-match').disabled=false;
+});
+document.getElementById('clear-votes').addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin){ alert("Only admin can perform this action"); return; }
+    Object.keys(users).forEach(u=>users[u].votes={}); localStorage.removeItem('mvpScores'); mvpScores={}; updateLeaderboards(); alert("Votes cleared.");
+});
 
 </script>
 </body>
