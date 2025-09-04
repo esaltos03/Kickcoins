@@ -680,16 +680,15 @@ function renderEntityList(){
         btn.style.cursor = "pointer";
 
         btn.onclick = ()=>{
-            if(confirm(`Remove player "${e}" from betting?`)){
-                propEntities.splice(index,1);
-                delete propsTemplate[e]; // remove their props
-                localStorage.setItem('propEntities', JSON.stringify(propEntities));
-                localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
-                renderEntityList();
-                populatePlayers();   // update betting dropdown
-                renderPropsList();  // update admin props list
-            }
-        };
+    if(confirm(`Remove player "${e}" from betting?`)){
+        propEntities.splice(index,1);
+        delete propsTemplate[e]; // remove their props
+        localStorage.setItem('propEntities', JSON.stringify(propEntities));
+        localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
+        populatePropAdmin(); // refresh dropdown + entity list
+        populatePlayers();   // update betting dropdown
+    }
+};
 
         div.appendChild(btn);
         container.appendChild(div);
