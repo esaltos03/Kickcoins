@@ -603,17 +603,18 @@ matchDiv.appendChild(totalDiv);
 
 // ------------------ ADMIN PROP MANAGEMENT ------------------
 function populatePropAdmin(){
-    let sel=document.getElementById('prop-player'); 
-    sel.innerHTML="";
+    let sel = document.getElementById('prop-player'); 
+    sel.innerHTML = "";
 
     propEntities.forEach(p=>{ 
-        let opt=document.createElement("option"); 
-        opt.value=p; 
-        opt.text=p; 
+        let opt = document.createElement("option"); 
+        opt.value = p; 
+        opt.text = p; 
         sel.appendChild(opt); 
     });
 
-    renderPropsList();
+    renderPropsList();  // Render props for selected player
+    renderEntityList(); // Render list of players
 
     // --- ADD ENTITY MANAGEMENT CONTROLS ---
     let entityContainer = document.getElementById('prop-entity-container');
@@ -625,34 +626,49 @@ function populatePropAdmin(){
         let input = document.createElement('input');
         input.type = 'text';
         input.id = 'new-entity';
-        input.placeholder = 'Enter new entity';
+        input.placeholder = 'Enter new player';
 
         let addBtn = document.createElement('button');
-        addBtn.textContent = 'Add Entity';
+        addBtn.textContent = 'Add Player';
         addBtn.onclick = ()=>{
             let name = input.value.trim();
             if(name && !propEntities.includes(name)){
                 propEntities.push(name);
+                // initialize default props
+                propsTemplate[name] = [
+                    {name:"Score", odds:4},
+                    {name:"Assist", odds:3},
+                    {name:"Anything", odds:2}
+                ];
                 localStorage.setItem('propEntities', JSON.stringify(propEntities));
+                localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
                 input.value="";
-                populatePropAdmin();
+                populatePropAdmin(); // re-render everything
+                populatePlayers();    // update betting dropdown
             }
         };
 
         entityContainer.appendChild(input);
         entityContainer.appendChild(addBtn);
-
         sel.parentNode.insertBefore(entityContainer, sel.nextSibling);
     }
 }
+
 function renderEntityList(){
     let container = document.getElementById('entity-list');
+    if(!container){
+        container = document.createElement('div');
+        container.id = 'entity-list';
+        container.style.margin = "10px 0";
+        document.getElementById('prop-player').parentNode.appendChild(container);
+    }
     container.innerHTML = "";
+
     propEntities.forEach((e, index)=>{
         let div = document.createElement("div");
         div.textContent = e + " ";
 
-        // Create Remove button
+        // Remove player button
         let btn = document.createElement("button");
         btn.textContent = "Remove";
         btn.style.marginLeft = "10px";
@@ -664,11 +680,14 @@ function renderEntityList(){
         btn.style.cursor = "pointer";
 
         btn.onclick = ()=>{
-            if(confirm(`Are you sure you want to remove "${e}"?`)){
+            if(confirm(`Remove player "${e}" from betting?`)){
                 propEntities.splice(index,1);
+                delete propsTemplate[e]; // remove their props
                 localStorage.setItem('propEntities', JSON.stringify(propEntities));
+                localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
                 renderEntityList();
-                populatePropAdmin(); // Update dropdown
+                populatePlayers();   // update betting dropdown
+                renderPropsList();  // update admin props list
             }
         };
 
@@ -676,6 +695,50 @@ function renderEntityList(){
         container.appendChild(div);
     });
 }
+
+function renderPropsList(){
+    const container = document.getElementById('props-list');
+    container.innerHTML = "";
+    const player = document.getElementById('prop-player').value;
+    if(!propsTemplate[player]) propsTemplate[player]=[];
+
+    propsTemplate[player].forEach((p, i)=>{
+        const div = document.createElement('div');
+        div.textContent = `${p.name} (${p.odds}x) `;
+
+        const btn = document.createElement('button');
+        btn.textContent = "Remove";
+        btn.style.marginLeft="10px";
+        btn.onclick = ()=>{
+            if(confirm(`Remove prop "${p.name}" from ${player}?`)){
+                propsTemplate[player].splice(i,1);
+                localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
+                renderPropsList();
+                populatePlayers(); // update betting dropdown
+            }
+        };
+        div.appendChild(btn);
+        container.appendChild(div);
+    });
+}
+
+// Add new prop
+document.getElementById('add-prop').addEventListener('click',()=>{
+    if(!currentUser || !users[currentUser].isAdmin) return;
+    let player = document.getElementById('prop-player').value;
+    let name = document.getElementById('new-prop').value.trim();
+    let odds = parseInt(document.getElementById('new-odds').value);
+
+    if(name && odds > 0){
+        if(!propsTemplate[player]) propsTemplate[player] = [];
+        propsTemplate[player].push({name, odds});
+        localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
+        document.getElementById('new-prop').value = "";
+        document.getElementById('new-odds').value = "";
+        renderPropsList();
+        populatePlayers(); // update betting dropdown
+    }
+});
 document.getElementById('add-prop').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     let player = document.getElementById('prop-player').value;
