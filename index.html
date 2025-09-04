@@ -225,7 +225,8 @@ if(!localStorage.getItem('kickcoinsUsers')){
     var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
 }
 
-const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Ace"];
+const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Byron"];
+let propEntities = localStorage.getItem('propEntities') ? JSON.parse(localStorage.getItem('propEntities')) : [...players];
 let mvpScores = localStorage.getItem('mvpScores') ? JSON.parse(localStorage.getItem('mvpScores')) : {};
 players.forEach(p=>{ if(!mvpScores[p]) mvpScores[p]=0; });
 
