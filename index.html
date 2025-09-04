@@ -231,7 +231,7 @@ let mvpScores = localStorage.getItem('mvpScores') ? JSON.parse(localStorage.getI
 players.forEach(p=>{ if(!mvpScores[p]) mvpScores[p]=0; });
 
 let propsTemplate = localStorage.getItem('propsTemplate') ? JSON.parse(localStorage.getItem('propsTemplate')) : {};
-players.forEach(p=>{
+propEntities.forEach(p=>{
     if(!propsTemplate[p]) propsTemplate[p] = [{name:"Score", odds:4},{name:"Assist", odds:3},{name:"Anything", odds:2}];
 });
 localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
