@@ -408,13 +408,34 @@ function updateLeaderboards(){
 }
 
 // ------------------ HISTORY ------------------
-function updateHistory(){
-    const container=document.getElementById('history-container'); container.innerHTML="";
-    if(!currentUser) return;
-    users[currentUser].bets.filter(b=>b.match===currentMatch).forEach(bet=>{
-        let div=document.createElement("div"); div.className="card";
-        div.innerHTML = `Match ${bet.match} | Bet: ${bet.player} - ${bet.prop} | Amount: ${bet.amount} | Odds: ${bet.odds}x | Resolved: ${bet.resolved} | <span style="color:${bet.resolved ? (bet.won ? 'lime' : 'red') : 'yellow'};">${bet.resolved ? (bet.won ? 'Won' : 'Lost') : 'Pending'}</span>`;
-        container.appendChild(div);
+function updateHistory() {
+    const container = document.getElementById('history-container');
+    container.innerHTML = "";
+    if (!currentUser) return;
+
+    // Group bets by match
+    const betsByMatch = {};
+    users[currentUser].bets.forEach(bet => {
+        if (!betsByMatch[bet.match]) betsByMatch[bet.match] = [];
+        betsByMatch[bet.match].push(bet);
+    });
+
+    Object.keys(betsByMatch).sort((a,b)=>b-a).forEach(matchNum => {
+        // Match header
+        const matchDiv = document.createElement("div");
+        matchDiv.className = "card";
+        matchDiv.innerHTML = `<strong>Match ${matchNum}</strong>`;
+        
+        // Create list for bets
+        const ul = document.createElement("ul");
+        betsByMatch[matchNum].forEach(bet => {
+            const li = document.createElement("li");
+            li.innerHTML = `${bet.player} - ${bet.prop} (${bet.odds}x) | Amount: ${bet.amount} | Resolved: ${bet.resolved} | <span style="color:${bet.resolved ? (bet.won ? 'lime' : 'red') : 'yellow'};">${bet.resolved ? (bet.won ? 'Won' : 'Lost') : 'Pending'}</span>`;
+            ul.appendChild(li);
+        });
+
+        matchDiv.appendChild(ul);
+        container.appendChild(matchDiv);
     });
 }
 
