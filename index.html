@@ -428,52 +428,61 @@ document.getElementById('end-match').addEventListener('click',()=>{
 });
 
 // ------------------ REVIEW & RESOLVE BETS ------------------
+// ------------------ REVIEW & RESOLVE BETS ------------------
 function reviewBetsForAdmin(){
     const resolveDiv = document.getElementById('resolve-bets');
     resolveDiv.innerHTML="<h3>Resolve Bets</h3>";
+
+    // Collect all unresolved bets across users
+    let allBets = [];
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
             users[u].bets.filter(b=>!b.resolved).forEach(bet=>{
-                const div = document.createElement('div');
-div.className = "resolve-bet";
-
-// Info
-const info = document.createElement('div');
-info.className = "resolve-bet-info";
-info.textContent = `${u}: ${bet.player} - ${bet.prop} | Amount: ${bet.amount} | Odds: ${bet.odds}x`;
-div.appendChild(info);
-
-// Buttons container
-const btnContainer = document.createElement('div');
-btnContainer.className = "resolve-buttons";
-
-const winBtn = document.createElement('button');
-winBtn.textContent = "Win";
-winBtn.className = "win";
-winBtn.onclick = ()=>{ resolveBet(u, bet, true); div.remove(); };
-
-const loseBtn = document.createElement('button');
-loseBtn.textContent = "Lose";
-loseBtn.className = "lose";
-loseBtn.onclick = ()=>{ resolveBet(u, bet, false); div.remove(); };
-
-btnContainer.appendChild(winBtn);
-btnContainer.appendChild(loseBtn);
-div.appendChild(btnContainer);
-
-resolveDiv.appendChild(div);
+                allBets.push({username:u, player:bet.player, prop:bet.prop, amount:bet.amount, odds:bet.odds, betObj:bet});
             });
         }
     });
+
+    // Deduplicate bets by player + prop + odds
+    let uniqueBetsMap = {};
+    allBets.forEach(b=>{
+        let key = `${b.player}||${b.prop}||${b.odds}`;
+        if(!uniqueBetsMap[key]) uniqueBetsMap[key] = [];
+        uniqueBetsMap[key].push(b);
+    });
+
+    // Render unique bets
+    Object.entries(uniqueBetsMap).forEach(([key, betGroup])=>{
+        const sampleBet = betGroup[0]; // take first as sample
+        const div=document.createElement('div');
+        div.className = "admin-bet-card";
+        div.innerHTML=`${sampleBet.player} - ${sampleBet.prop} | Odds: ${sampleBet.odds}x | Amounts: ${betGroup.map(b=>b.amount).join(', ')}`;
+        
+        const winBtn=document.createElement('button'); 
+        winBtn.textContent="Win"; 
+        winBtn.className="admin-win-btn";
+        const loseBtn=document.createElement('button'); 
+        loseBtn.textContent="Lose"; 
+        loseBtn.className="admin-lose-btn";
+
+        // Resolving applies to all users who made this bet
+        winBtn.onclick = ()=>{ betGroup.forEach(b=>resolveBet(b.username, b.betObj, true)); div.remove(); };
+        loseBtn.onclick = ()=>{ betGroup.forEach(b=>resolveBet(b.username, b.betObj, false)); div.remove(); };
+
+        div.appendChild(winBtn); 
+        div.appendChild(loseBtn);
+        resolveDiv.appendChild(div);
+    });
 }
+
 function resolveBet(username, bet, won){
+    if(bet.resolved) return; // safety
     bet.resolved=true;
     bet.won=won;
     if(won){
         let payout = bet.amount * bet.odds + bet.amount;
         users[username].totalCoins += payout;
     }
-    // Removed subtraction from availableCoins here
     updateUI();
     updateHistory();
     updateLeaderboards();
