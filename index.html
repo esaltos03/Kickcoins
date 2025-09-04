@@ -425,16 +425,31 @@ function updateHistory() {
         const matchDiv = document.createElement("div");
         matchDiv.className = "card";
         matchDiv.innerHTML = `<strong>Match ${matchNum}</strong>`;
-        
+
         // Create list for bets
         const ul = document.createElement("ul");
+
+        let totalBet = 0;
+        let totalWon = 0;
+
         betsByMatch[matchNum].forEach(bet => {
             const li = document.createElement("li");
             li.innerHTML = `${bet.player} - ${bet.prop} (${bet.odds}x) | Amount: ${bet.amount} | Resolved: ${bet.resolved} | <span style="color:${bet.resolved ? (bet.won ? 'lime' : 'red') : 'yellow'};">${bet.resolved ? (bet.won ? 'Won' : 'Lost') : 'Pending'}</span>`;
             ul.appendChild(li);
+
+            totalBet += bet.amount;
+            if (bet.resolved && bet.won) totalWon += bet.amount * bet.odds + bet.amount;
         });
 
         matchDiv.appendChild(ul);
+
+        // Total summary
+        const summary = document.createElement("div");
+        let color = totalWon < 10 ? "red" : totalWon === 10 ? "yellow" : "lime";
+        summary.innerHTML = `<strong>Total Coins Bet:</strong> ${totalBet} | <strong>Total Coins Won:</strong> <span style="color:${color}">${totalWon}</span>`;
+        summary.style.marginTop = "5px";
+        matchDiv.appendChild(summary);
+
         container.appendChild(matchDiv);
     });
 }
