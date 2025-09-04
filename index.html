@@ -628,17 +628,35 @@ function populatePropAdmin(){
         sel.parentNode.insertBefore(entityContainer, sel.nextSibling);
     }
 }
-function renderPropsList(){
-    let player=document.getElementById('prop-player').value;
-    let container=document.getElementById('props-list'); container.innerHTML="";
-    propsTemplate[player].forEach((prop,index)=>{
-        let div=document.createElement("div"); div.textContent=`${prop.name} (${prop.odds}x) `;
-        let btn=document.createElement("button"); btn.textContent="Remove"; btn.onclick=()=>{
-            propsTemplate[player].splice(index,1);
-            localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
-            renderPropsList();
+function renderEntityList(){
+    let container=document.getElementById('entity-list');
+    container.innerHTML="";
+    propsEntities.forEach((e, index)=>{
+        let div=document.createElement("div");
+        div.textContent=e + " ";
+        
+        // Create Remove button
+        let btn=document.createElement("button");
+        btn.textContent="Remove";
+        btn.style.marginLeft="10px";
+        btn.style.padding="3px 8px";
+        btn.style.backgroundColor="#ff4d4d";
+        btn.style.color="#fff";
+        btn.style.border="none";
+        btn.style.borderRadius="4px";
+        btn.style.cursor="pointer";
+        
+        btn.onclick=()=>{
+            if(confirm(`Are you sure you want to remove "${e}"?`)){
+                propsEntities.splice(index,1);
+                localStorage.setItem('propsEntities', JSON.stringify(propsEntities));
+                renderEntityList();
+                populatePropAdmin(); // Update dropdown
+            }
         };
-        div.appendChild(btn); container.appendChild(div);
+        
+        div.appendChild(btn);
+        container.appendChild(div);
     });
 }
 document.getElementById('add-prop').addEventListener('click',()=>{
