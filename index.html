@@ -588,15 +588,14 @@ function updateHistory(){
 function populatePropAdmin(){
     let sel=document.getElementById('prop-player'); 
     sel.innerHTML="";
-
-    propEntities.forEach(p=>{ 
+    let allEntities = players.concat(propsEntities); // include added entities
+    allEntities.forEach(p=>{ 
         let opt=document.createElement("option"); 
-        opt.value=p; 
-        opt.text=p; 
+        opt.value=p; opt.text=p; 
         sel.appendChild(opt); 
     });
-
     renderPropsList();
+}
 
     // --- ADD ENTITY MANAGEMENT CONTROLS ---
     let entityContainer = document.getElementById('prop-entity-container');
