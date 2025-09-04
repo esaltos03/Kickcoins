@@ -587,12 +587,15 @@ function updateHistory(){
 
         // Total bet/won line
         const totalDiv = document.createElement("div");
-        totalDiv.className = "total";
-        totalDiv.textContent = `Total Coins Bet: ${totalBet} | Total Coins Won: ${totalWon}`;
-        if(totalWon < 10) totalDiv.style.color = "red";
-        else if(totalWon === 10) totalDiv.style.color = "yellow";
-        else totalDiv.style.color = "green";
-        matchDiv.appendChild(totalDiv);
+totalDiv.className = "total total-coins";  // added total-coins class
+totalDiv.textContent = `Total Coins Bet: ${totalBet} | Total Coins Won: ${totalWon}`;
+
+// Optional: keep color coding
+if(totalWon < 10) totalDiv.style.color = "red";
+else if(totalWon === 10) totalDiv.style.color = "yellow";
+else totalDiv.style.color = "green";
+
+matchDiv.appendChild(totalDiv);
 
         container.appendChild(matchDiv);
     });
