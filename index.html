@@ -280,7 +280,7 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
         let odds=Number(p.querySelector('input').dataset.odds);
         if(amt>0){
             if(acc.availableCoins>=amt){
-                acc.availableCoins-=amt;
+                acc.availableCoins -= amt;
                 acc.bets.push({match:currentMatch, player:document.getElementById('player-select').value,prop:propName,amount:amt,odds:odds,resolved:false,won:false});
             }else{ alert("Cannot bet more than available balance"); }
         }
@@ -293,9 +293,19 @@ document.getElementById('open-bets').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     bettingOpen=true; document.getElementById('open-bets').disabled=true; document.getElementById('close-bets').disabled=false;
     currentMatch+=1; localStorage.setItem('currentMatch', currentMatch);
-    // Give all users 10 coins available
+    // Give all users 10 coins from totalCoins
     Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin) users[u].availableCoins=10; users[u].voted=false;
+        if(!users[u].isAdmin){
+            let give=10;
+            if(users[u].totalCoins >= give){
+                users[u].totalCoins -= give;
+                users[u].availableCoins += give;
+            } else {
+                users[u].availableCoins += users[u].totalCoins;
+                users[u].totalCoins = 0;
+            }
+            users[u].voted=false;
+        }
     });
     updateUI();
 });
@@ -311,6 +321,8 @@ document.getElementById('start-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     matchActive=true; document.getElementById('start-match').disabled=true; document.getElementById('end-match').disabled=false;
     updateUI();
+    // Show unresolved bets for admin to review
+    reviewBetsForAdmin();
 });
 document.getElementById('end-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
@@ -330,23 +342,53 @@ document.getElementById('end-match').addEventListener('click',()=>{
     updateLeaderboards(); updateUI(); alert("Match ended, MVP tallied!");
 });
 
+// ------------------ REVIEW & RESOLVE BETS ------------------
+function reviewBetsForAdmin(){
+    const resolveDiv = document.getElementById('resolve-bets');
+    resolveDiv.innerHTML="<h3>Resolve Bets</h3>";
+    Object.keys(users).forEach(u=>{
+        if(!users[u].isAdmin){
+            users[u].bets.filter(b=>!b.resolved).forEach(bet=>{
+                const div=document.createElement('div');
+                div.innerHTML=`${u}: ${bet.player} - ${bet.prop} | Amount: ${bet.amount} | Odds: ${bet.odds}x `;
+                const winBtn=document.createElement('button'); winBtn.textContent="Win";
+                const loseBtn=document.createElement('button'); loseBtn.textContent="Lose";
+                winBtn.onclick=()=>{ resolveBet(u, bet, true); div.remove(); };
+                loseBtn.onclick=()=>{ resolveBet(u, bet, false); div.remove(); };
+                div.appendChild(winBtn); div.appendChild(loseBtn);
+                resolveDiv.appendChild(div);
+            });
+        }
+    });
+}
+function resolveBet(username, bet, won){
+    bet.resolved=true;
+    bet.won=won;
+    if(won){
+        let payout = bet.amount * bet.odds + bet.amount;
+        users[username].totalCoins += payout;
+    }
+    users[username].availableCoins -= bet.amount;
+    updateUI();
+    updateHistory();
+    updateLeaderboards();
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+}
+
 // ------------------ LEADERBOARDS ------------------
 function updateLeaderboards(){
-    // Overall MVP leaderboard
     let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody'); tbody.innerHTML="";
     Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]).forEach((entry,i)=>{
         let tr=document.createElement("tr");
         let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
         tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1]}</td>`; tbody.appendChild(tr);
     });
-    // Per-match MVP history
     const mh=document.getElementById('mvp-history'); mh.innerHTML="";
     mvpHistory.forEach(m=>{
         let div=document.createElement("div"); div.className="card";
         div.innerHTML=`<strong>Match ${m.match}</strong><br>`+m.results.map(r=>`${r.place}: ${r.player} (+${r.points})`).join("<br>");
         mh.appendChild(div);
     });
-    // Coin leaderboard (betting tab)
     let ct=document.getElementById('coin-leaderboard').querySelector('tbody'); ct.innerHTML="";
     Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins).forEach((entry,i)=>{
         let tr=document.createElement("tr");
