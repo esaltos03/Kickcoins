@@ -377,7 +377,7 @@ function resolveBet(username, bet, won){
         let payout = bet.amount * bet.odds + bet.amount;
         users[username].totalCoins += payout;
     }
-    users[username].availableCoins -= bet.amount;
+    // Removed subtraction from availableCoins here
     updateUI();
     updateHistory();
     updateLeaderboards();
@@ -408,15 +408,12 @@ function updateLeaderboards(){
 }
 
 // ------------------ HISTORY ------------------
-// Cosmetic update: color-code bets green/red for win/loss, keep "Match X" white
 function updateHistory(){
-    const container=document.getElementById('history-container'); 
-    container.innerHTML="";
+    const container=document.getElementById('history-container'); container.innerHTML="";
     if(!currentUser) return;
     users[currentUser].bets.filter(b=>b.match===currentMatch).forEach(bet=>{
-        let div=document.createElement("div"); 
-        div.className="card";
-        div.innerHTML=`<strong>Match ${bet.match}</strong> | Bet: <span style="color:${bet.won?'green':'red'}">${bet.player} - ${bet.prop} | Amount: ${bet.amount} | Odds: ${bet.odds}x | Resolved: ${bet.resolved} | Won: ${bet.won}</span>`;
+        let div=document.createElement("div"); div.className="card";
+        div.innerHTML=`Match ${bet.match} | Bet: ${bet.player} - ${bet.prop} | Amount: ${bet.amount} | Odds: ${bet.odds}x | Resolved: ${bet.resolved} | Won: ${bet.won}`;
         container.appendChild(div);
     });
 }
