@@ -247,12 +247,30 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
     </div>
     <div class="card">
         <h2>Manage Betting Props</h2>
-        <label>Player:</label>
-        <select id="prop-player"></select><br><br>
-        <input type="text" id="new-prop" placeholder="Enter prop name">
-        <input type="number" id="new-odds" placeholder="Odds (x)" min="1">
-        <button id="add-prop">Add Prop</button>
-        <div id="props-list"></div>
+
+<div class="admin-section">
+  <h3>Add Player</h3>
+  <input type="text" id="new-player-name" placeholder="Enter new player">
+  <button id="add-player">Add Player</button>
+</div>
+
+<div class="admin-section">
+  <h3>Add Prop</h3>
+  <select id="prop-player"></select>
+  <input type="text" id="new-prop-name" placeholder="Enter prop name">
+  <input type="number" id="new-prop-odds" placeholder="Odds (x)" min="1">
+  <button id="add-prop">Add Prop</button>
+</div>
+
+<div class="admin-section">
+  <h3>Current Props</h3>
+  <div id="props-container" class="tag-list"></div>
+</div>
+
+<div class="admin-section">
+  <h3>Current Players</h3>
+  <div id="players-container" class="tag-list"></div>
+</div>
     </div>
     <div class="card">
         <h2>Admin Tests</h2>
