@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kickcoins - Fantasy Betting</title>
 <style>
-/* --- STYLES SAME AS ORIGINAL --- */
 body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; margin:0; padding:0; }
 header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background-color:#1a1a1a; }
 header .account { display:flex; align-items:center; gap:15px; }
@@ -53,7 +52,6 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 </div>
 
 <main>
-<!-- MVP Voting -->
 <div class="tab-content" id="vote-tab">
     <div class="card">
         <h2>Vote for MVP</h2>
@@ -67,7 +65,6 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
     </div>
 </div>
 
-<!-- Betting -->
 <div class="tab-content" id="bet-tab" style="display:none;">
     <div class="card">
         <h2>Betting</h2>
@@ -80,7 +77,6 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
     </div>
 </div>
 
-<!-- Leaderboards -->
 <div class="tab-content" id="leaderboard-tab" style="display:none;">
     <div class="card">
         <h2>Overall MVP Leaderboard</h2>
@@ -95,7 +91,6 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
     </div>
 </div>
 
-<!-- Bet History -->
 <div class="tab-content" id="history-tab" style="display:none;">
     <div class="card">
         <h2>Betting Leaderboard</h2>
@@ -107,7 +102,6 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
     <div class="card" id="history-container"></div>
 </div>
 
-<!-- Admin -->
 <div class="tab-content" id="admin-tab" style="display:none;">
     <div class="card">
         <h2>Admin Controls</h2>
@@ -205,7 +199,6 @@ function updateUI(){
     let acc=users[currentUser];
     document.getElementById('account-info').innerHTML=`${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-    // Admin tab visibility
     const adminTab = document.querySelector('.tab[data-tab="admin"]');
     const adminContent = document.getElementById('admin-tab');
     if(users[currentUser].isAdmin){
@@ -279,10 +272,11 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
         let amt=Number(p.querySelector('input').value);
         let odds=Number(p.querySelector('input').dataset.odds);
         if(amt>0){
-            if(acc.availableCoins>=amt){
-                acc.availableCoins -= amt;
-                acc.bets.push({match:currentMatch, player:document.getElementById('player-select').value,prop:propName,amount:amt,odds:odds,resolved:false,won:false});
-            }else{ alert("Cannot bet more than available balance"); }
+            let betAmount = Math.min(amt, acc.availableCoins);
+            if(betAmount > 0){
+                acc.availableCoins -= betAmount;
+                acc.bets.push({match:currentMatch, player:document.getElementById('player-select').value,prop:propName,amount:betAmount,odds:odds,resolved:false,won:false});
+            } else { alert("Cannot bet more than available balance"); }
         }
     }
     updateUI(); updatePotentialPayout(); updateHistory(); alert("Bets placed!");
@@ -293,15 +287,14 @@ document.getElementById('open-bets').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     bettingOpen=true; document.getElementById('open-bets').disabled=true; document.getElementById('close-bets').disabled=false;
     currentMatch+=1; localStorage.setItem('currentMatch', currentMatch);
-    // Give all users 10 coins from totalCoins
     Object.keys(users).forEach(u=>{
         if(!users[u].isAdmin){
             let give=10;
             if(users[u].totalCoins >= give){
                 users[u].totalCoins -= give;
-                users[u].availableCoins += give;
+                users[u].availableCoins = give;
             } else {
-                users[u].availableCoins += users[u].totalCoins;
+                users[u].availableCoins = users[u].totalCoins;
                 users[u].totalCoins = 0;
             }
             users[u].voted=false;
@@ -313,21 +306,17 @@ document.getElementById('close-bets').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     bettingOpen=false; document.getElementById('open-bets').disabled=false; document.getElementById('close-bets').disabled=true;
     document.getElementById('start-match').disabled=false;
-    // Reset remaining available coins
     Object.keys(users).forEach(u=>{ if(!users[u].isAdmin) users[u].availableCoins=0; });
     updateUI(); updateHistory();
 });
 document.getElementById('start-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     matchActive=true; document.getElementById('start-match').disabled=true; document.getElementById('end-match').disabled=false;
-    updateUI();
-    // Show unresolved bets for admin to review
-    reviewBetsForAdmin();
+    updateUI(); reviewBetsForAdmin();
 });
 document.getElementById('end-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     matchActive=false; document.getElementById('end-match').disabled=true; document.getElementById('start-match').disabled=false;
-    // Tally votes
     let matchResult={match:currentMatch, results:[]};
     Object.keys(users).forEach(u=>{
         let v=users[u].votesThisMatch;
@@ -369,9 +358,7 @@ function resolveBet(username, bet, won){
         users[username].totalCoins += payout;
     }
     users[username].availableCoins -= bet.amount;
-    updateUI();
-    updateHistory();
-    updateLeaderboards();
+    updateUI(); updateHistory(); updateLeaderboards();
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
 }
 
