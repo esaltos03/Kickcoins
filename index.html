@@ -615,20 +615,6 @@ function populatePropAdmin(){
 
     renderPropsList();
 
-// ------------------ ADMIN PROP MANAGEMENT ------------------
-function populatePropAdmin(){
-    let sel=document.getElementById('prop-player'); 
-    sel.innerHTML="";
-
-    propEntities.forEach(p=>{ 
-        let opt=document.createElement("option"); 
-        opt.value=p; 
-        opt.text=p; 
-        sel.appendChild(opt); 
-    });
-
-    renderPropsList();
-
     // --- ADD ENTITY MANAGEMENT CONTROLS ---
     let entityContainer = document.getElementById('prop-entity-container');
     if(!entityContainer){
@@ -690,23 +676,6 @@ function renderEntityList(){
         container.appendChild(div);
     });
 }
-document.getElementById('add-prop').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin) return;
-    let player = document.getElementById('prop-player').value;
-    let name = document.getElementById('new-prop').value.trim();
-    let odds = parseInt(document.getElementById('new-odds').value);
-
-    if(name && odds > 0){
-        // Ensure this entity exists in propsTemplate
-        if(!propsTemplate[player]) propsTemplate[player] = [];
-
-        propsTemplate[player].push({name, odds});
-        localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
-        document.getElementById('new-prop').value = "";
-        document.getElementById('new-odds').value = "";
-        renderPropsList();
-    }
-});
 document.getElementById('add-prop').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     let player = document.getElementById('prop-player').value;
