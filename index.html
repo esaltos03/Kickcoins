@@ -48,7 +48,7 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
     <div class="tab" data-tab="bet">Betting</div>
     <div class="tab" data-tab="leaderboard">Leaderboards</div>
     <div class="tab" data-tab="history">Bet History</div>
-    <div class="tab" id="admin-tab-btn" data-tab="admin" style="display:none;">Admin</div>
+    <div class="tab" data-tab="admin">Admin</div>
 </div>
 
 <main>
@@ -196,38 +196,25 @@ document.querySelectorAll('.tab').forEach(tab=>{
         document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
         document.getElementById(tab.dataset.tab+'-tab').style.display='block';
         updateUI(); if(tab.dataset.tab==="history") updateHistory();
+        if(tab.dataset.tab==="admin" && currentUser && users[currentUser].isAdmin) renderPropsList();
     });
 });
 
-/* ----- ACCOUNT DISPLAY & ADMIN TAB VISIBILITY ----- */
+/* ----- ACCOUNT DISPLAY ----- */
 function updateUI(){
     if(!currentUser) return;
     let acc=users[currentUser];
     let html=`${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
     document.getElementById('account-info').innerHTML=html;
-
-    // Hide/show Admin tab
-    const adminTabBtn=document.getElementById('admin-tab-btn');
-    if(acc.isAdmin){
-        adminTabBtn.style.display="block";
-    }else{
-        adminTabBtn.style.display="none";
-        if(document.querySelector(".tab.active").dataset.tab==="admin"){
-            document.querySelector('[data-tab="vote"]').click();
-        }
-    }
-
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
 }
 
 /* ----- MVP VOTING ----- */
 function populateVoting(){
     ["vote1","vote2","vote3"].forEach(id=>{
-        let sel=document.getElementById(id);
-        sel.innerHTML="";
+        let sel=document.getElementById(id); sel.innerHTML="";
         players.forEach(p=>{
-            let opt=document.createElement("option"); opt.value=p; opt.text=p;
-            sel.appendChild(opt);
+            let opt=document.createElement("option"); opt.value=p; opt.text=p; sel.appendChild(opt);
         });
     });
 }
@@ -245,27 +232,23 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
     alert("Votes submitted!");
 });
 
-/* ----- BETTING ----- */
+/* ----- BETTING SYSTEM ----- */
 function populatePlayers(){
-    let sel=document.getElementById('player-select');
-    sel.innerHTML="";
+    let sel=document.getElementById('player-select'); sel.innerHTML="";
     players.forEach(p=>{
-        let opt=document.createElement("option"); opt.value=p; opt.text=p;
-        sel.appendChild(opt);
+        let opt=document.createElement("option"); opt.value=p; opt.text=p; sel.appendChild(opt);
     });
     sel.addEventListener('change', populateProps);
 }
 function populateProps(){
-    let container=document.getElementById('props-container');
-    container.innerHTML="";
+    let container=document.getElementById('props-container'); container.innerHTML="";
     let player=document.getElementById('player-select').value;
     propsTemplate[player].forEach(prop=>{
         let card=document.createElement("div"); card.className="prop";
         let label=document.createElement("span"); label.textContent=`${prop.name} (${prop.odds}x)`; label.className="green";
-        let input=document.createElement("input"); input.type="number"; input.min=0; input.max=users[currentUser].availableCoins;
+        let input=document.createElement("input"); input.type="number"; input.min=0; input.max=users[currentUser].availableCoins; input.dataset.odds=prop.odds;
         input.oninput=updatePotentialPayout;
-        card.appendChild(label); card.appendChild(input);
-        container.appendChild(card);
+        card.appendChild(label); card.appendChild(input); container.appendChild(card);
     });
     updatePotentialPayout();
 }
@@ -273,69 +256,112 @@ function updatePotentialPayout(){
     const container=document.getElementById('props-container');
     let total=0;
     for(let p of container.children){
-        let amt=Number(p.querySelector('input').value);
-        let odds=parseInt(p.querySelector('span').textContent.split('(')[1]);
-        total+=amt*odds;
-        let color=amt*odds>50?'green':'yellow';
-        p.querySelector('span').style.color=color;
+        let input=p.querySelector('input'); let amt=Number(input.value); let odds=Number(input.dataset.odds);
+        if(amt>0){ total += amt*odds + amt; }
     }
     const payoutDisplay=document.getElementById('total-payout');
-    payoutDisplay.textContent=total;
-    payoutDisplay.style.color=total>50?'green':'yellow';
+    payoutDisplay.textContent=total; payoutDisplay.style.color=total>50?'green':'yellow';
 }
+
+/* ----- SUBMIT BETS ----- */
 document.getElementById('submit-bets').addEventListener('click',()=>{
     if(!bettingOpen){ alert("Betting not open."); return; }
-    let container=document.getElementById('props-container');
-    let acc=users[currentUser];
+    let container=document.getElementById('props-container'); let acc=users[currentUser];
     for(let p of container.children){
         let propName=p.querySelector('span').textContent;
         let amt=Number(p.querySelector('input').value);
+        let odds=Number(p.querySelector('input').dataset.odds);
         if(amt>0){
             if(acc.availableCoins>=amt){
                 acc.availableCoins-=amt;
-                acc.bets.push({player:document.getElementById('player-select').value,prop:propName,amount:amt,odds:parseInt(propName.split('(')[1]),resolved:false,won:false});
+                acc.bets.push({player:document.getElementById('player-select').value,prop:propName,amount:amt,odds:odds,resolved:false,won:false});
             }else{ alert("Cannot bet more than available balance"); }
         }
     }
     updateUI(); updatePotentialPayout(); alert("Bets placed!");
 });
 
-/* ----- ADMIN PROPS MANAGEMENT ----- */
+/* ----- ADMIN PROP MANAGEMENT ----- */
 function populatePropAdmin(){
-    const sel=document.getElementById('prop-player'); sel.innerHTML="";
-    players.forEach(p=>{
-        let opt=document.createElement('option'); opt.value=p; opt.text=p; sel.appendChild(opt);
-    });
-    renderPropList();
+    let sel=document.getElementById('prop-player'); sel.innerHTML="";
+    players.forEach(p=>{ let opt=document.createElement("option"); opt.value=p; opt.text=p; sel.appendChild(opt); });
+    renderPropsList();
 }
-function renderPropList(){
-    const container=document.getElementById('props-list'); container.innerHTML="";
-    players.forEach(p=>{
-        let div=document.createElement('div'); div.innerHTML=`<strong>${p}</strong>: `;
-        propsTemplate[p].forEach((prop,i)=>{
-            let btn=document.createElement('button'); btn.textContent="X";
-            btn.onclick=()=>{ propsTemplate[p].splice(i,1); localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate)); renderPropList(); };
-            div.appendChild(document.createTextNode(`${prop.name} (${prop.odds}x) `));
-            div.appendChild(btn);
-        });
-        container.appendChild(div);
+function renderPropsList(){
+    let player=document.getElementById('prop-player').value;
+    let container=document.getElementById('props-list'); container.innerHTML="";
+    propsTemplate[player].forEach((prop,index)=>{
+        let div=document.createElement("div"); div.textContent=`${prop.name} (${prop.odds}x) `;
+        let btn=document.createElement("button"); btn.textContent="Remove"; btn.onclick=()=>{
+            propsTemplate[player].splice(index,1);
+            localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
+            renderPropsList();
+        };
+        div.appendChild(btn); container.appendChild(div);
     });
 }
 document.getElementById('add-prop').addEventListener('click',()=>{
     let player=document.getElementById('prop-player').value;
     let name=document.getElementById('new-prop').value.trim();
     let odds=parseInt(document.getElementById('new-odds').value);
-    if(!name||!odds){ alert("Enter prop and odds"); return; }
-    propsTemplate[player].push({name,odds});
-    localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
-    document.getElementById('new-prop').value=""; document.getElementById('new-odds').value="";
-    renderPropList();
+    if(name && odds>0){
+        propsTemplate[player].push({name,odds});
+        localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
+        document.getElementById('new-prop').value=""; document.getElementById('new-odds').value="";
+        renderPropsList();
+    }
 });
 
-/* ----- ADMIN MATCH CONTROLS, LEADERBOARDS, ETC. ----- */
-/* Keep all your existing logic exactly as before */
+/* ----- LEADERBOARDS ----- */
+function updateLeaderboards(){
+    if(matchActive){
+        Object.keys(users).forEach(u=>{
+            let v=users[u].votes;
+            if(v["1st"]) mvpScores[v["1st"]]+=5;
+            if(v["2nd"]) mvpScores[v["2nd"]]+=3;
+            if(v["3rd"]) mvpScores[v["3rd"]]+=2;
+        });
+    }
+    localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
+    let tbody=document.getElementById('mvp-leaderboard').querySelector('tbody'); tbody.innerHTML="";
+    Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]).forEach((entry,i)=>{
+        let tr=document.createElement("tr");
+        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
+        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1]}</td>`; tbody.appendChild(tr);
+    });
+    let ct=document.getElementById('coin-leaderboard').querySelector('tbody'); ct.innerHTML="";
+    Object.entries(users).filter(u=>!users[u[0]].isAdmin).sort((a,b)=>b[1].totalCoins-a[1].totalCoins).forEach((entry,i)=>{
+        let tr=document.createElement("tr");
+        let delBtn=users[currentUser]&&users[currentUser].isAdmin?`<button onclick="deleteUser('${entry[0]}')">Delete</button>`:"";
+        let icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
+        tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1].totalCoins}</td><td>${delBtn}</td>`; ct.appendChild(tr);
+    });
+}
 
-showLogin(true);
+/* ----- DELETE USER ----- */
+function deleteUser(username){
+    if(confirm(`Admin, confirm delete ${username}?`)){ delete users[username]; updateLeaderboards(); updateUI(); alert(`${username} deleted`); }
+}
+
+/* ----- BET HISTORY ----- */
+function updateHistory(){
+    const container=document.getElementById('history-container'); container.innerHTML="";
+    if(!currentUser) return;
+    users[currentUser].bets.forEach(bet=>{
+        let div=document.createElement("div"); div.className="card";
+        div.innerHTML=`Bet: ${bet.player} - ${bet.prop} | Amount: ${bet.amount} | Odds: ${bet.odds}x | Resolved: ${bet.resolved} | Won: ${bet.won}`;
+        container.appendChild(div);
+    });
+}
+
+/* ----- ADMIN MATCH CONTROL ----- */
+document.getElementById('open-bets').addEventListener('click',()=>{ bettingOpen=true; document.getElementById('open-bets').disabled=true; document.getElementById('close-bets').disabled=false; });
+document.getElementById('close-bets').addEventListener('click',()=>{ bettingOpen=false; document.getElementById('open-bets').disabled=false; document.getElementById('close-bets').disabled=true; document.getElementById('start-match').disabled=false; });
+document.getElementById('start-match').addEventListener('click',()=>{ matchActive=true; document.getElementById('start-match').disabled=true; document.getElementById('end-match').disabled=false; });
+document.getElementById('end-match').addEventListener('click',()=>{ matchActive=false; document.getElementById('end-match').disabled=true; document.getElementById('start-match').disabled=false; });
+
+document.getElementById('clear-votes').addEventListener('click',()=>{ Object.keys(users).forEach(u=>users[u].votes={}); localStorage.removeItem('mvpScores'); mvpScores={}; updateLeaderboards(); alert("Votes cleared."); });
+
 </script>
 </body>
 </html>
