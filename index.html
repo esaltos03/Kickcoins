@@ -922,7 +922,7 @@ document.getElementById('clear-votes').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     Object.keys(users).forEach(u=>users[u].votesThisMatch={});
     mvpScores={}; mvpHistory=[]; currentMatch=0;
-    db.collection("users").doc(username).set(users[username]);
+    db.collection("users").doc(currentUser).set(users[currentUser]);
     localStorage.removeItem('mvpScores'); localStorage.removeItem('mvpHistory'); localStorage.setItem('currentMatch', currentMatch);
     updateLeaderboards(); updateUI(); alert("Votes cleared.");
 });
