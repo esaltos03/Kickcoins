@@ -246,25 +246,36 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
         <div id="resolve-bets"></div>
     </div>
     <div class="card">
-        <h2>Manage Betting Props</h2>
+<h2>Manage Betting Props</h2>
 
-<div class="admin-section">
-  <h3>Add Player</h3>
-  <input type="text" id="new-player-name" placeholder="Enter new player">
-  <button id="add-player">Add Player</button>
+<!-- Admin props area: left = players/entity controls, right = add prop + current props -->
+<div class="admin-section" style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
+
+  <!-- Left column: player select + entity (player) management (JS will create entity controls if missing) -->
+  <div style="min-width:260px; width:260px;">
+    <label style="display:block; margin-bottom:6px;">Player:</label>
+    <select id="prop-player" style="width:100%; padding:6px; margin-bottom:8px;"></select>
+
+    <!-- NOTE: Do NOT remove this area — renderEntityList() may create or update #entity-list -->
+    <div id="players-list-wrapper" style="margin-top:8px;">
+      <small style="opacity:0.8;">Players (use remove buttons):</small>
+      <div id="entity-list" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- Right column: add prop & props list -->
+  <div style="flex:1; min-width:300px;">
+    <label style="display:block; margin-bottom:6px;">Add Prop</label>
+    <input type="text" id="new-prop" placeholder="Enter prop name" style="padding:6px; width:60%;" />
+    <input type="number" id="new-odds" placeholder="Odds (x)" min="1" style="padding:6px; width:30%; margin-left:6px;" />
+    <button id="add-prop" type="button" style="display:block; margin-top:8px; padding:6px 8px;">Add Prop</button>
+
+    <div style="margin-top:12px;">
+      <h4 style="margin:6px 0;">Current Props</h4>
+      <div id="props-list"></div>
+    </div>
+  </div>
 </div>
-
-<div class="admin-section">
-  <h3>Add Prop</h3>
-  <select id="prop-player"></select>
-  <input type="text" id="new-prop-name" placeholder="Enter prop name">
-  <input type="number" id="new-prop-odds" placeholder="Odds (x)" min="1">
-  <button id="add-prop">Add Prop</button>
-</div>
-
-<div class="admin-section">
-  <h3>Current Props</h3>
-  <div id="props-container" class="tag-list"></div>
 </div>
 
 <div class="admin-section">
