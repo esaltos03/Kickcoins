@@ -495,9 +495,7 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
     let second=document.getElementById('vote2').value;
     let third=document.getElementById('vote3').value;
     if(new Set([first,second,third]).size<3){ alert("Cannot vote same player multiple times."); return; }
-    users[currentUser].votesThisMatch={"1st":first,"2nd":second,"3rd":third};
-    users[currentUser].voted=true;
-    db.collection("users").doc(username).set(users[username]);
+   db.collection("users").doc(currentUser).set(users[currentUser]);
     alert("Votes submitted!");
     updateLeaderboards();
 });
