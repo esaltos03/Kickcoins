@@ -314,15 +314,6 @@ const db = firebase.firestore();
 // ------------------ STORAGE ------------------
 // We no longer use localStorage for users
 let users = {};  
-
-async function loadUsers() {
-  const snapshot = await db.collection("users").get();
-  snapshot.forEach(doc => {
-    users[doc.id] = doc.data();
-  });
-}
-
-// Call once on startup
 loadUsers();
     db.collection("users").doc(currentUser)
 }else{
