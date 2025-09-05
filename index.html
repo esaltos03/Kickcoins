@@ -347,23 +347,99 @@ let currentUser=null;
 let matchActive=false;
 let bettingOpen=false;
 
-// ------------------ LOGIN ------------------
+// ------------------ LOGIN / CREATE / LOGOUT ------------------
+
+// Hide login card / show app
 function showLogin(show=true){
-    document.getElementById('login-card').style.display=show?'block':'none';
-    document.getElementById('app').style.display=!show?'block':'none';
-    document.getElementById('logout-btn').style.display=!show?'inline':'none';
+    document.getElementById('login-card').style.display = show ? 'block' : 'none';
+    document.getElementById('app').style.display = !show ? 'block' : 'none';
+    document.getElementById('logout-btn').style.display = !show ? 'inline' : 'none';
 }
-document.getElementById('login-btn').addEventListener('click', () => {
-    const user = document.getElementById('login-username').value;
+
+// Load users from Firestore
+async function loadUsers() {
+    users = {};
+    const snapshot = await db.collection("users").get();
+    snapshot.forEach(doc => {
+        users[doc.id] = doc.data();
+    });
+}
+
+// LOGIN
+document.getElementById('login-btn').addEventListener('click', async () => {
+    const username = document.getElementById('login-username').value;
+    const email = username + "@kickcoins.com";
     const pass = document.getElementById('login-password').value;
 
-    if (users[user] && users[user].password === pass) {
-        currentUser = user;
+    try {
+        const userCred = await auth.signInWithEmailAndPassword(email, pass);
+        currentUser = userCred.user.displayName || username;
 
-        // Save login state to localStorage
-        localStorage.setItem("loggedInUser", currentUser);
-        localStorage.setItem("isAdmin", users[user].isAdmin ? "true" : "false");
+        await loadUsers();  // refresh users from Firestore
+        showLogin(false);
 
+        updateUI();
+        populateVoting();
+        populatePlayers();
+        updateLeaderboards();
+        updateHistory();
+        populatePropAdmin();
+    } catch (err) {
+        alert("Login failed: " + err.message);
+    }
+});
+
+// CREATE ACCOUNT
+document.getElementById('create-btn').addEventListener('click', async () => {
+    const username = document.getElementById('login-username').value;
+    const email = username + "@kickcoins.com";
+    const pass = document.getElementById('login-password').value;
+
+    if (!username || !pass) {
+        alert("Please enter username and password.");
+        return;
+    }
+
+    try {
+        const userCred = await auth.createUserWithEmailAndPassword(email, pass);
+        await userCred.user.updateProfile({ displayName: username });
+
+        // Initialize in Firestore
+        users[username] = {
+            password: pass,
+            totalCoins: 100,
+            availableCoins: 0,
+            votesThisMatch: {},
+            bets: [],
+            mvpPoints: 0,
+            history: [],
+            voted: false
+        };
+
+        await db.collection("users").doc(username).set(users[username]);
+
+        alert("Account created! You can now login.");
+    } catch (err) {
+        alert("Error creating account: " + err.message);
+    }
+});
+
+// LOGOUT
+document.getElementById('logout-btn').addEventListener('click', async () => {
+    try {
+        await auth.signOut();
+        currentUser = null;
+        showLogin(true);
+    } catch (err) {
+        alert("Logout failed: " + err.message);
+    }
+});
+
+// Restore session if user already logged in (Firebase)
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        currentUser = user.displayName || user.email.split("@")[0];
+        await loadUsers();
         showLogin(false);
         updateUI();
         populateVoting();
@@ -371,27 +447,10 @@ document.getElementById('login-btn').addEventListener('click', () => {
         updateLeaderboards();
         updateHistory();
         populatePropAdmin();
-
-        alert("Logged in!");
     } else {
-        alert("Invalid credentials");
+        currentUser = null;
+        showLogin(true);
     }
-});
-document.getElementById('create-btn').addEventListener('click',()=>{
-    const user=document.getElementById('login-username').value;
-    const pass=document.getElementById('login-password').value;
-    if(users[user]){ alert("User exists"); return; }
-    users[user]={password:pass,totalCoins:100,availableCoins:0,votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false};
-    db.collection("users").doc(username).set(users[username]);
-    alert("Account created! You can now login.");
-});
-document.getElementById('logout-btn').addEventListener('click', () => {
-    localStorage.removeItem("loggedInUser");
-    localStorage.removeItem("isAdmin");
-
-    currentUser = null;
-
-    showLogin(true);
 });
 // ------------------ TAB NAV ------------------
 document.querySelectorAll('.tab').forEach(tab=>{
