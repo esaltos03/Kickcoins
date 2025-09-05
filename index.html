@@ -327,13 +327,29 @@ function showLogin(show=true){
     document.getElementById('app').style.display=!show?'block':'none';
     document.getElementById('logout-btn').style.display=!show?'inline':'none';
 }
-document.getElementById('login-btn').addEventListener('click',()=>{
-    const user=document.getElementById('login-username').value;
-    const pass=document.getElementById('login-password').value;
-    if(users[user] && users[user].password===pass){
-        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
+document.getElementById('login-btn').addEventListener('click', () => {
+    const user = document.getElementById('login-username').value;
+    const pass = document.getElementById('login-password').value;
+
+    if (users[user] && users[user].password === pass) {
+        currentUser = user;
+
+        // Save login state to localStorage
+        localStorage.setItem("loggedInUser", currentUser);
+        localStorage.setItem("isAdmin", users[user].isAdmin ? "true" : "false");
+
+        showLogin(false);
+        updateUI();
+        populateVoting();
+        populatePlayers();
+        updateLeaderboards();
+        updateHistory();
+        populatePropAdmin();
+
         alert("Logged in!");
-    }else{ alert("Invalid credentials"); }
+    } else {
+        alert("Invalid credentials");
+    }
 });
 document.getElementById('create-btn').addEventListener('click',()=>{
     const user=document.getElementById('login-username').value;
@@ -343,8 +359,14 @@ document.getElementById('create-btn').addEventListener('click',()=>{
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
     alert("Account created! You can now login.");
 });
-document.getElementById('logout-btn').addEventListener('click',()=>{ currentUser=null; showLogin(true); });
+document.getElementById('logout-btn').addEventListener('click', () => {
+    localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("isAdmin");
 
+    currentUser = null;
+
+    showLogin(true);
+});
 // ------------------ TAB NAV ------------------
 document.querySelectorAll('.tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
@@ -824,6 +846,29 @@ document.getElementById('clear-votes').addEventListener('click',()=>{
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
     localStorage.removeItem('mvpScores'); localStorage.removeItem('mvpHistory'); localStorage.setItem('currentMatch', currentMatch);
     updateLeaderboards(); updateUI(); alert("Votes cleared.");
+});
+window.addEventListener("load", () => {
+    const savedUser = localStorage.getItem("loggedInUser");
+    const savedAdmin = localStorage.getItem("isAdmin");
+
+    if (savedUser) {
+        currentUser = savedUser;
+
+        // Restore admin flag
+        if (savedAdmin === "true") {
+            users[savedUser] = users[savedUser] || {};
+            users[savedUser].isAdmin = true;
+        }
+
+        // Show the logged-in UI
+        showLogin(false);
+        updateUI();
+        populateVoting();
+        populatePlayers();
+        updateLeaderboards();
+        updateHistory();
+        populatePropAdmin();
+    }
 });
 </script>
 </body>
