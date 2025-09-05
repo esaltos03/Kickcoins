@@ -324,7 +324,7 @@ async function loadUsers() {
 
 // Call once on startup
 loadUsers();
-    db.collection("users").doc(username).set(users[username]);
+    db.collection("users").doc(currentUser)
 }else{
     var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
 }
@@ -416,7 +416,7 @@ document.getElementById('create-btn').addEventListener('click', async () => {
             voted: false
         };
 
-        await db.collection("users").doc(username).set(users[username]);
+        db.collection("users").doc(currentUser)
 
         alert("Account created! You can now login.");
     } catch (err) {
@@ -669,7 +669,7 @@ function resolveBet(username, bet, won){
     updateUI();
     updateHistory();
     updateLeaderboards();
-    db.collection("users").doc(username).set(users[username]);
+    db.collection("users").doc(currentUser)
 }
 
 // ------------------ LEADERBOARDS ------------------
