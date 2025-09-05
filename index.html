@@ -453,7 +453,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
 });
 
 // ------------------ ACCOUNT DISPLAY ------------------
-db.collection("users").doc(currentUser).set(users[currentUser]);
+await db.collection("users").doc(currentUser).set(users[currentUser]);
     // Admin tab visibility
     const adminTab = document.querySelector('.tab[data-tab="admin"]');
     const adminContent = document.getElementById('admin-tab');
@@ -483,7 +483,7 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
     let second=document.getElementById('vote2').value;
     let third=document.getElementById('vote3').value;
     if(new Set([first,second,third]).size<3){ alert("Cannot vote same player multiple times."); return; }
-   db.collection("users").doc(currentUser).set(users[currentUser]);
+   await db.collection("users").doc(currentUser).set(users[currentUser]);
     alert("Votes submitted!");
     updateLeaderboards();
 });
@@ -657,7 +657,7 @@ function resolveBet(username, bet, won){
     updateUI();
     updateHistory();
     updateLeaderboards();
-    db.collection("users").doc(currentUser)
+    await db.collection("users").doc(currentUser).set(users[currentUser]);
 }
 
 // ------------------ LEADERBOARDS ------------------
@@ -910,7 +910,7 @@ document.getElementById('clear-votes').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     Object.keys(users).forEach(u=>users[u].votesThisMatch={});
     mvpScores={}; mvpHistory=[]; currentMatch=0;
-    db.collection("users").doc(currentUser).set(users[currentUser]);
+    await db.collection("users").doc(currentUser).set(users[currentUser]);
     localStorage.removeItem('mvpScores'); localStorage.removeItem('mvpHistory'); localStorage.setItem('currentMatch', currentMatch);
     updateLeaderboards(); updateUI(); alert("Votes cleared.");
 });
