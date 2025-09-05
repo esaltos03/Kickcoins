@@ -404,7 +404,7 @@ document.getElementById('create-btn').addEventListener('click', async () => {
             voted: false
         };
 
-        db.collection("users").doc(currentUser)
+        await db.collection("users").doc(username).set(users[username]);
 
         alert("Account created! You can now login.");
     } catch (err) {
