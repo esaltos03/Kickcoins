@@ -316,8 +316,6 @@ const db = firebase.firestore();
 let users = {};  
 loadUsers();
     db.collection("users").doc(currentUser)
-}else{
-}
 
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Byron"];
 let propEntities = localStorage.getItem('propEntities') ? JSON.parse(localStorage.getItem('propEntities')) : [...players];
