@@ -349,7 +349,7 @@ function showLogin(show=true){
 
 // Load users from Firestore
 async function loadUsers() {
-    users = {};
+    users = {};  // reset local users object
     const snapshot = await db.collection("users").get();
     snapshot.forEach(doc => {
         users[doc.id] = doc.data();
