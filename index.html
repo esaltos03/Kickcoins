@@ -154,12 +154,6 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
   color: white;
 }
 </style>
-<!-- Firebase App (core SDK) -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
-<!-- Firebase Authentication -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js"></script>
-<!-- Firebase Firestore -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
 </head>
 <body>
 
@@ -296,31 +290,18 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
 </div>
 </main>
 
-<script type="module">
-// --- FIREBASE v9 MODULE IMPORTS ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-
-// --- FIREBASE CONFIG ---
-const firebaseConfig = {
-    apiKey: "AIzaSyDN-nIM0My4T9QxZXc9YoU2xM0zbBwijPs",
-    authDomain: "kick-coins-v2.firebaseapp.com",
-    projectId: "kick-coins-v2",
-    storageBucket: "kick-coins-v2.firebasestorage.app",
-    messagingSenderId: "756155782772",
-    appId: "1:756155782772:web:e107563f7280bb5c2fe321"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth();
-const db = getFirestore();
-
-// ------------------ STORAGE & STATE ------------------
-let users = {};  
-let currentUser = null;
-let matchActive=false;
-let bettingOpen=false;
+<script>
+// ------------------ STORAGE ------------------
+if(!localStorage.getItem('kickcoinsUsers')){
+    var users = {
+        "Erick": { password:"pass", totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false },
+        "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false },
+        "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false }
+    };
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+}else{
+    var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
+}
 
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Byron"];
 let propEntities = localStorage.getItem('propEntities') ? JSON.parse(localStorage.getItem('propEntities')) : [...players];
@@ -336,100 +317,34 @@ localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
 let mvpHistory = localStorage.getItem('mvpHistory') ? JSON.parse(localStorage.getItem('mvpHistory')) : [];
 let currentMatch = localStorage.getItem('currentMatch') ? parseInt(localStorage.getItem('currentMatch')) : 0;
 
-// ------------------ FIRESTORE HELPERS ------------------
-async function loadUsers() {
-    users = {};
-    const snapshot = await getDocs(collection(db, "users"));
-    snapshot.forEach(doc => users[doc.id] = doc.data());
-}
+let currentUser=null;
+let matchActive=false;
+let bettingOpen=false;
 
-async function saveCurrentUser() {
-    if(!currentUser) return;
-    await setDoc(doc(db, "users", currentUser), users[currentUser]);
-}
-
-// ------------------ UI SHOW/HIDE LOGIN ------------------
+// ------------------ LOGIN ------------------
 function showLogin(show=true){
-    document.getElementById('login-card').style.display = show ? 'block' : 'none';
-    document.getElementById('app').style.display = !show ? 'block' : 'none';
-    document.getElementById('logout-btn').style.display = !show ? 'inline' : 'none';
+    document.getElementById('login-card').style.display=show?'block':'none';
+    document.getElementById('app').style.display=!show?'block':'none';
+    document.getElementById('logout-btn').style.display=!show?'inline':'none';
 }
-
-// ------------------ LOGIN / CREATE ACCOUNT ------------------
-document.getElementById('login-btn').addEventListener('click', async () => {
-    const username = document.getElementById('login-username').value.trim();
-    const email = username + "@kickcoins.com";
-    const pass = document.getElementById('login-password').value;
-    try {
-        const userCred = await signInWithEmailAndPassword(auth, email, pass);
-        currentUser = userCred.user.uid;
-        await loadUsers();
-        showLogin(false);
-        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
-    } catch(err) {
-        alert("Login failed: " + err.message);
-    }
+document.getElementById('login-btn').addEventListener('click',()=>{
+    const user=document.getElementById('login-username').value;
+    const pass=document.getElementById('login-password').value;
+    if(users[user] && users[user].password===pass){
+        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
+        alert("Logged in!");
+    }else{ alert("Invalid credentials"); }
 });
-
-document.getElementById('create-btn').addEventListener('click', async () => {
-    const username = document.getElementById('login-username').value.trim();
-    const email = username + "@kickcoins.com";
-    const pass = document.getElementById('login-password').value;
-    if (!username || !pass) return alert("Enter username and password.");
-
-    try {
-        const userCred = await createUserWithEmailAndPassword(auth, email, pass);
-        await updateProfile(userCred.user, { displayName: username });
-        currentUser = userCred.user.uid;
-
-        users[username] = {
-            password: pass,
-            totalCoins: 100,
-            availableCoins: 0,
-            votesThisMatch: {},
-            bets: [],
-            mvpPoints: 0,
-            history: [],
-            voted: false
-        };
-
-        await saveCurrentUser();
-        alert("Account created! You can now login.");
-    } catch(err) {
-        alert("Error creating account: " + err.message);
-    }
+document.getElementById('create-btn').addEventListener('click',()=>{
+    const user=document.getElementById('login-username').value;
+    const pass=document.getElementById('login-password').value;
+    if(users[user]){ alert("User exists"); return; }
+    users[user]={password:pass,totalCoins:100,availableCoins:0,votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false};
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+    alert("Account created! You can now login.");
 });
+document.getElementById('logout-btn').addEventListener('click',()=>{ currentUser=null; showLogin(true); });
 
-document.getElementById('logout-btn').addEventListener('click', async () => {
-    try {
-        await signOut(auth);
-        currentUser = null;
-        showLogin(true);
-    } catch(err) { alert("Logout failed: "+err.message); }
-});
-
-// ------------------ SESSION RESTORE ------------------
-onAuthStateChanged(auth, async (user) => {
-    if(user){
-        currentUser = user.uid;
-        await loadUsers();
-
-        // find displayName in users
-        if(user.displayName) {
-            currentUser = user.displayName;
-        }
-
-        if(!users[currentUser]){
-            alert("Account missing in Firestore."); currentUser = null; showLogin(true); return;
-        }
-
-        showLogin(false);
-        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
-    } else {
-        currentUser = null;
-        showLogin(true);
-    }
-});
 // ------------------ TAB NAV ------------------
 document.querySelectorAll('.tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
@@ -443,7 +358,11 @@ document.querySelectorAll('.tab').forEach(tab=>{
 });
 
 // ------------------ ACCOUNT DISPLAY ------------------
-await db.collection("users").doc(currentUser).set(users[currentUser]);
+function updateUI(){
+    if(!currentUser) return;
+    let acc=users[currentUser];
+    document.getElementById('account-info').innerHTML=`${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
     // Admin tab visibility
     const adminTab = document.querySelector('.tab[data-tab="admin"]');
     const adminContent = document.getElementById('admin-tab');
@@ -473,7 +392,9 @@ document.getElementById('submit-votes').addEventListener('click',()=>{
     let second=document.getElementById('vote2').value;
     let third=document.getElementById('vote3').value;
     if(new Set([first,second,third]).size<3){ alert("Cannot vote same player multiple times."); return; }
-   await db.collection("users").doc(currentUser).set(users[currentUser]);
+    users[currentUser].votesThisMatch={"1st":first,"2nd":second,"3rd":third};
+    users[currentUser].voted=true;
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
     alert("Votes submitted!");
     updateLeaderboards();
 });
@@ -647,7 +568,7 @@ function resolveBet(username, bet, won){
     updateUI();
     updateHistory();
     updateLeaderboards();
-    await db.collection("users").doc(currentUser).set(users[currentUser]);
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
 }
 
 // ------------------ LEADERBOARDS ------------------
@@ -900,43 +821,9 @@ document.getElementById('clear-votes').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
     Object.keys(users).forEach(u=>users[u].votesThisMatch={});
     mvpScores={}; mvpHistory=[]; currentMatch=0;
-    await db.collection("users").doc(currentUser).set(users[currentUser]);
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
     localStorage.removeItem('mvpScores'); localStorage.removeItem('mvpHistory'); localStorage.setItem('currentMatch', currentMatch);
     updateLeaderboards(); updateUI(); alert("Votes cleared.");
-});
-// ------------------ SESSION RESTORATION ------------------
-auth.onAuthStateChanged(async (user) => {
-    if (user) {
-        // Set currentUser from Firebase
-        currentUser = user.displayName || user.email.split("@")[0];
-
-        // Load latest users from Firestore
-        await loadUsers();
-
-        // Verify user exists in Firestore
-        if (!users[currentUser]) {
-            alert("Your account no longer exists in the system.");
-            currentUser = null;
-            showLogin(true);
-            return;
-        }
-
-        // Optional: restore admin flag if needed (can be stored in Firestore)
-        // users[currentUser].isAdmin = users[currentUser].isAdmin || false;
-
-        // Show UI after all checks and data loaded
-        showLogin(false);
-        updateUI();
-        populateVoting();
-        populatePlayers();
-        updateLeaderboards();
-        updateHistory();
-        populatePropAdmin();
-    } else {
-        // No user logged in
-        currentUser = null;
-        showLogin(true);
-    }
 });
 </script>
 </body>
