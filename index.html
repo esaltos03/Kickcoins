@@ -324,7 +324,7 @@ async function loadUsers() {
 
 // Call once on startup
 loadUsers();
-    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+    db.collection("users").doc(username).set(users[username]);
 }else{
     var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
 }
@@ -382,7 +382,7 @@ document.getElementById('create-btn').addEventListener('click',()=>{
     const pass=document.getElementById('login-password').value;
     if(users[user]){ alert("User exists"); return; }
     users[user]={password:pass,totalCoins:100,availableCoins:0,votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false};
-    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+    db.collection("users").doc(username).set(users[username]);
     alert("Account created! You can now login.");
 });
 document.getElementById('logout-btn').addEventListener('click', () => {
