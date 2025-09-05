@@ -914,20 +914,27 @@ document.getElementById('clear-votes').addEventListener('click',()=>{
     localStorage.removeItem('mvpScores'); localStorage.removeItem('mvpHistory'); localStorage.setItem('currentMatch', currentMatch);
     updateLeaderboards(); updateUI(); alert("Votes cleared.");
 });
-window.addEventListener("load", () => {
-    const savedUser = localStorage.getItem("loggedInUser");
-    const savedAdmin = localStorage.getItem("isAdmin");
+// ------------------ SESSION RESTORATION ------------------
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        // Set currentUser from Firebase
+        currentUser = user.displayName || user.email.split("@")[0];
 
-    if (savedUser) {
-        currentUser = savedUser;
+        // Load latest users from Firestore
+        await loadUsers();
 
-        // Restore admin flag
-        if (savedAdmin === "true") {
-            users[savedUser] = users[savedUser] || {};
-            users[savedUser].isAdmin = true;
+        // Verify user exists in Firestore
+        if (!users[currentUser]) {
+            alert("Your account no longer exists in the system.");
+            currentUser = null;
+            showLogin(true);
+            return;
         }
 
-        // Show the logged-in UI
+        // Optional: restore admin flag if needed (can be stored in Firestore)
+        // users[currentUser].isAdmin = users[currentUser].isAdmin || false;
+
+        // Show UI after all checks and data loaded
         showLogin(false);
         updateUI();
         populateVoting();
@@ -935,6 +942,10 @@ window.addEventListener("load", () => {
         updateLeaderboards();
         updateHistory();
         populatePropAdmin();
+    } else {
+        // No user logged in
+        currentUser = null;
+        showLogin(true);
     }
 });
 </script>
