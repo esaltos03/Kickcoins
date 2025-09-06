@@ -698,6 +698,8 @@ function populatePropAdmin(){
         input.type = 'text';
         input.id = 'new-entity';
         input.placeholder = 'Enter new player';
+        input.style.margin = "0px 0px 10px 0px"
+        input.style.padding = "6px";
 
         let addBtn = document.createElement('button');
         addBtn.textContent = 'Add Player';
@@ -737,7 +739,9 @@ function renderEntityList(){
 
     propEntities.forEach((e, index)=>{
         let div = document.createElement("div");
+        div.id = "player-list";
         div.textContent = e + " ";
+        div.style.margin = "4px";
 
         // Remove player button
         let btn = document.createElement("button");
@@ -775,6 +779,7 @@ function renderPropsList(){
     propsTemplate[player].forEach((p, i)=>{
         const div = document.createElement('div');
         div.textContent = `${p.name} (${p.odds}x) `;
+        div.style.margin = "4px";
 
         const btn = document.createElement('button');
         btn.textContent = "Remove";
