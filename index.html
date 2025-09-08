@@ -314,6 +314,9 @@ firebase.initializeApp(firebaseConfig);
 // Initialize services AFTER app init
 const auth = firebase.auth();
 const db   = firebase.firestore();
+    window.addEventListener('error', (e) => {
+  alert('JS Error: ' + (e && e.message ? e.message : String(e)));
+});
 if(!localStorage.getItem('kickcoinsUsers')){
     var users = {
         "Erick": { password:"pass", totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false },
