@@ -587,22 +587,9 @@ document.getElementById('open-bets').addEventListener('click', async ()=>{
   });
   // We will handle coins later when we move coins to Firestore.
 });
-document.getElementById('close-bets').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin) return;
-    bettingOpen=false; 
-    document.getElementById('open-bets').disabled=false; 
-    document.getElementById('close-bets').disabled=true;
-    document.getElementById('start-match').disabled=false;
-
-    // FIX: Zero out availableCoins WITHOUT subtracting from totalCoins
-    Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin){
-            users[u].availableCoins = 0;
-        }
-    });
-
-    updateUI(); 
-    updateHistory();
+document.getElementById('close-bets').addEventListener('click', async ()=>{
+  if (!currentUser || !users[currentUser]?.isAdmin) return;
+  await stateRef.update({ bettingOpen: false });
 });
 document.getElementById('start-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
