@@ -333,29 +333,80 @@ let matchActive=false;
 let bettingOpen=false;
 
 // ------------------ LOGIN ------------------
-function showLogin(show=true){
-    document.getElementById('login-card').style.display=show?'block':'none';
-    document.getElementById('app').style.display=!show?'block':'none';
-    document.getElementById('logout-btn').style.display=!show?'inline':'none';
-}
-document.getElementById('login-btn').addEventListener('click',()=>{
-    const user=document.getElementById('login-username').value;
-    const pass=document.getElementById('login-password').value;
-    if(users[user] && users[user].password===pass){
-        currentUser=user; showLogin(false); updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
-        alert("Logged in!");
-    }else{ alert("Invalid credentials"); }
-});
-document.getElementById('create-btn').addEventListener('click',()=>{
-    const user=document.getElementById('login-username').value;
-    const pass=document.getElementById('login-password').value;
-    if(users[user]){ alert("User exists"); return; }
-    users[user]={password:pass,totalCoins:100,availableCoins:0,votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false};
-    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-    alert("Account created! You can now login.");
-});
-document.getElementById('logout-btn').addEventListener('click',()=>{ currentUser=null; showLogin(true); });
+// ------------------ FIREBASE LOGIN / CREATE / LOGOUT ------------------
 
+// Toggle login vs app UI
+function showLogin(show=true){
+    document.getElementById('login-card').style.display = show ? 'block' : 'none';
+    document.getElementById('app').style.display = !show ? 'block' : 'none';
+    document.getElementById('logout-btn').style.display = !show ? 'inline' : 'none';
+}
+
+// Helper: convert username to fake email
+function usernameToEmail(username){
+    return username + "@kickcoins.com";
+}
+
+// LOGIN
+document.getElementById('login-btn').addEventListener('click', async ()=>{
+    const username = document.getElementById('login-username').value.trim();
+    const pass = document.getElementById('login-password').value;
+    if(!username || !pass){ alert("Enter username and password."); return; }
+    try {
+        const email = usernameToEmail(username);
+        await auth.signInWithEmailAndPassword(email, pass);
+        currentUser = username;
+        if(!users[username]){
+            users[username] = { password:pass, totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false };
+            localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+        }
+        showLogin(false);
+        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
+        alert("Logged in!");
+    } catch(err){ alert("Login failed: " + err.message); }
+});
+
+// CREATE
+document.getElementById('create-btn').addEventListener('click', async ()=>{
+    const username = document.getElementById('login-username').value.trim();
+    const pass = document.getElementById('login-password').value;
+    if(!username || !pass){ alert("Enter username and password."); return; }
+    if(users[username]){ alert("User exists locally."); return; }
+    try {
+        const email = usernameToEmail(username);
+        const cred = await auth.createUserWithEmailAndPassword(email, pass);
+        await cred.user.updateProfile({ displayName: username });
+        users[username] = { password:pass, totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false };
+        localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+        currentUser = username;
+        showLogin(false);
+        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
+        alert("Account created & logged in!");
+    } catch(err){ alert("Signup failed: " + err.message); }
+});
+
+// LOGOUT
+document.getElementById('logout-btn').addEventListener('click', async ()=>{
+    try { await auth.signOut(); currentUser=null; showLogin(true); }
+    catch(err){ alert("Logout failed: " + err.message); }
+});
+
+// React to Firebase login state changes
+auth.onAuthStateChanged(user=>{
+    if(user){
+        const username = user.displayName || user.email.split("@")[0];
+        currentUser = username;
+        if(!users[username]){
+            users[username] = { password:"", totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false };
+            localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+        }
+        showLogin(false);
+        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
+    }else{
+        currentUser=null;
+        showLogin(true);
+    }
+});
 // ------------------ TAB NAV ------------------
 document.querySelectorAll('.tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
