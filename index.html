@@ -438,15 +438,6 @@ document.getElementById('logout-btn').addEventListener('click', async ()=>{
     catch(err){ alert("Logout failed: " + err.message); }
 });
 
-// React to Firebase login state changes (DIAGNOSTIC VERSION)
-auth.onAuthStateChanged(async (user) => {
-  if (!user) {
-    currentUser = null;
-    showLogin(true);
-    alert('AUTH: not signed in');
-    return;
-  }
-
 // React to Firebase login state changes (SAFE VERSION)
 auth.onAuthStateChanged(async (user) => {
   if (!user) {
@@ -466,10 +457,8 @@ auth.onAuthStateChanged(async (user) => {
     const uid = user.uid;
     const userRef = db.collection('users').doc(uid);
 
-    // 1) Read current doc FIRST (do not overwrite roles)
+    // Read FIRST; only create minimal fields if doc is missing (do NOT touch roles)
     let snap = await userRef.get();
-
-    // 2) If it doesn't exist, create a minimal doc WITHOUT touching roles
     if (!snap.exists) {
       await userRef.set({
         email: user.email || null,
@@ -477,13 +466,13 @@ auth.onAuthStateChanged(async (user) => {
         coins: 100,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
-      snap = await userRef.get(); // re-read after creating
+      snap = await userRef.get();
     }
 
     const data = snap.exists ? snap.data() : {};
     const adminVal = data && data.roles ? data.roles.admin : undefined;
 
-    // DIAG popup so you can see it once
+    // Keep while debugging; remove later if you want
     alert(
       'AUTH: signed in' +
       '\nUID: ' + uid +
@@ -491,13 +480,12 @@ auth.onAuthStateChanged(async (user) => {
       '\nroles.admin: ' + String(adminVal) + ' (type: ' + typeof adminVal + ')'
     );
 
-    // 3) Keep local mirror and sync admin flag from Firestore
+    // Keep local model happy + sync admin flag from Firestore
     if (!users[username]) {
       users[username] = { password: "", totalCoins: 100, availableCoins: 0, votesThisMatch: {}, bets: [], mvpPoints: 0, history: [], voted: false };
     }
     users[username].isAdmin = (adminVal === true);
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-
   } catch (e) {
     alert('AUTH DIAG error: ' + (e && e.message ? e.message : String(e)));
   }
