@@ -354,27 +354,37 @@ function usernameToEmail(username){
 }
 
 // LOGIN
-document.getElementById('login-btn').addEventListener('click', async ()=>{
+document.getElementById('login-btn').addEventListener('click', async () => {
     const username = document.getElementById('login-username').value.trim();
     const pass = document.getElementById('login-password').value;
-    if(!username || !pass){ alert("Enter username and password."); return; }
+    if (!username || !pass) { alert("Enter username and password."); return; }
+
+    const email = usernameToEmail(username);
+
     try {
-        await auth.signInWithEmailAndPassword(email, password);
-        const doc = await db.collection("users").doc(username).get();
+        // First, log in with Firebase Auth
+        await auth.signInWithEmailAndPassword(email, pass);
+
+        // Then, sync user data from Firestore
+        const docRef = db.collection("users").doc(username);
+        const doc = await docRef.get();
+
         if (doc.exists) {
-            users[username] = doc.data();
+            users[username] = doc.data();  // use Firestore version
         } else {
+            // Create Firestore doc if missing
             users[username] = {
-                password,
+                password: pass,
                 totalCoins: 100,
                 availableCoins: 100,
                 votesThisMatch: {},
                 bets: [],
                 mvpPoints: 0,
                 history: [],
-                voted: false
+                voted: false,
+                isAdmin: username === "admin" ? true : false
             };
-            await db.collection("users").doc(username).set(users[username]);
+            await docRef.set(users[username]);
         }
 
         currentUser = username;
@@ -385,6 +395,8 @@ document.getElementById('login-btn').addEventListener('click', async ()=>{
         updateLeaderboards();
         updateHistory();
         populatePropAdmin();
+
+        alert("Logged in!");
     } catch (err) {
         alert("Login failed: " + err.message);
     }
