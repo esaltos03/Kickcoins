@@ -614,14 +614,14 @@ if(!st.bettingOpen){ alert("Betting not open."); return; }
 document.getElementById('open-bets').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
   try {
-    await stateRef.update({
+    await stateRef.set({
       bettingOpen: true,
       matchActive: false,
       currentMatch: firebase.firestore.FieldValue.increment(1)
-    });
+    }, { merge: true });
     alert('Betting opened.');
   } catch (e) {
-    alert('Open betting failed: ' + (e && e.message ? e.message : e));
+    alert('Open betting failed: ' + (e && e.code ? e.code + ' - ' : '') + (e && e.message ? e.message : e));
   }
 });
   // We will handle coins later when we move coins to Firestore.
