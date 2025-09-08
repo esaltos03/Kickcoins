@@ -438,11 +438,12 @@ document.getElementById('logout-btn').addEventListener('click', async ()=>{
     catch(err){ alert("Logout failed: " + err.message); }
 });
 
-// React to Firebase login state changes
+// React to Firebase login state changes (DIAGNOSTIC VERSION)
 auth.onAuthStateChanged(async (user) => {
   if (!user) {
     currentUser = null;
     showLogin(true);
+    alert('AUTH: not signed in');
     return;
   }
 
@@ -450,33 +451,13 @@ auth.onAuthStateChanged(async (user) => {
   const username = (user.displayName && user.displayName.trim())
     ? user.displayName.trim()
     : (user.email ? user.email.split("@")[0] : "user");
-
   currentUser = username;
-  // --- DIAG: confirm UID and roles.admin from Firestore ---
+
   try {
     const uid = user.uid;
-    const snap = await db.collection('users').doc(uid).get();
-    const data = snap.exists ? snap.data() : {};
-    const adminVal = data && data.roles ? data.roles.admin : undefined;
-    alert(
-      'UID: ' + uid +
-      '\nDoc exists: ' + snap.exists +
-      '\nroles.admin: ' + String(adminVal) +
-      ' (type: ' + typeof adminVal + ')'
-    );
-  } catch (e) {
-    alert('DIAG user doc read failed: ' + (e.message || e));
-  }
-  // Keep your existing local model alive for now
-  if (!users[username]) {
-    users[username] = { password: "", totalCoins: 100, availableCoins: 0, votesThisMatch: {}, bets: [], mvpPoints: 0, history: [], voted: false };
-    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-  }
+    const userRef = db.collection('users').doc(uid);
 
-  // --- Ensure Firestore profile by UID (prevents future bricks) ---
-  const userRef = db.collection("users").doc(user.uid);
-  const snap = await userRef.get();
-  if (!snap.exists) {
+    // Ensure profile exists (safe no-op if it already does)
     await userRef.set({
       email: user.email || null,
       username: username,
@@ -484,6 +465,28 @@ auth.onAuthStateChanged(async (user) => {
       coins: 100,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
+
+    const snap = await userRef.get();
+    const data = snap.exists ? snap.data() : {};
+    const adminVal = data && data.roles ? data.roles.admin : undefined;
+
+    // <<< THIS alert is what you should see right after signing in >>>
+    alert(
+      'AUTH: signed in' +
+      '\nUID: ' + uid +
+      '\nDoc exists: ' + snap.exists +
+      '\nroles.admin: ' + String(adminVal) + ' (type: ' + typeof adminVal + ')'
+    );
+
+    // Keep your local model alive + sync local admin flag from Firestore
+    if (!users[username]) {
+      users[username] = { password: "", totalCoins: 100, availableCoins: 0, votesThisMatch: {}, bets: [], mvpPoints: 0, history: [], voted: false };
+    }
+    users[username].isAdmin = (adminVal === true);
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+
+  } catch (e) {
+    alert('AUTH DIAG error: ' + (e && e.message ? e.message : String(e)));
   }
 
   // Proceed with your UI
