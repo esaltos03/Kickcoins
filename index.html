@@ -387,23 +387,37 @@ document.getElementById('login-btn').addEventListener('click', async () => {
 });
 
 // CREATE
-document.getElementById('create-btn').addEventListener('click', async ()=>{
+document.getElementById('create-btn').addEventListener('click', async () => {
     const username = document.getElementById('login-username').value.trim();
     const pass = document.getElementById('login-password').value;
-    if(!username || !pass){ alert("Enter username and password."); return; }
-    if(users[username]){ alert("User exists locally."); return; }
+    if (!username || !pass) { alert("Enter username and password."); return; }
+
+    const email = usernameToEmail(username);
+
     try {
-        const email = usernameToEmail(username);
         const cred = await auth.createUserWithEmailAndPassword(email, pass);
         await cred.user.updateProfile({ displayName: username });
-        users[username] = { password:pass, totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false };
-        localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+
+        users[username] = {
+            totalCoins:100,
+            availableCoins:100,
+            votesThisMatch:{},
+            bets:[],
+            mvpPoints:0,
+            history:[],
+            voted:false,
+            isAdmin: false
+        };
+        await db.collection("users").doc(username).set(users[username]);
+
         currentUser = username;
         showLogin(false);
         updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
-        await db.collection("users").doc(username).set(users[username]);
+
         alert("Account created & logged in!");
-    } catch(err){ alert("Signup failed: " + err.message); }
+    } catch(err){
+        alert("Signup failed: " + err.message);
+    }
 });
 
 // LOGOUT
