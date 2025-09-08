@@ -561,7 +561,8 @@ function updatePotentialPayout(){
     payoutDisplay.textContent=total; payoutDisplay.style.color=total>50?'green':'yellow';
 }
 document.getElementById('submit-bets').addEventListener('click',()=>{
-    if(!bettingOpen){ alert("Betting not open."); return; }
+    const st = window.__appState || {};
+if(!st.bettingOpen){ alert("Betting not open."); return; }
     let container=document.getElementById('props-container'); let acc=users[currentUser];
     for(let p of container.children){
         let propName=p.querySelector('span').textContent;
