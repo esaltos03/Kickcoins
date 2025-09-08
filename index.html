@@ -608,6 +608,21 @@ if(!st.bettingOpen){ alert("Betting not open."); return; }
 });
 
 // ------------------ ADMIN BET CONTROL ------------------
+document.getElementById('open-bets').addEventListener('click', async ()=>{
+  if (!currentUser || !users[currentUser]?.isAdmin) return;
+  try {
+    await stateRef.update({
+      bettingOpen: true,
+      matchActive: false,
+      currentMatch: firebase.firestore.FieldValue.increment(1)
+    });
+    alert('Betting opened.');
+  } catch (e) {
+    alert('Open betting failed: ' + (e && e.message ? e.message : e));
+  }
+});
+  // We will handle coins later when we move coins to Firestore.
+});
 document.getElementById('close-bets').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
   try {
@@ -617,33 +632,37 @@ document.getElementById('close-bets').addEventListener('click', async ()=>{
     alert('Close betting failed: ' + (e && e.message ? e.message : e));
   }
 });
-  // We will handle coins later when we move coins to Firestore.
-});
-document.getElementById('close-bets').addEventListener('click', async ()=>{
-  if (!currentUser || !users[currentUser]?.isAdmin) return;
-  await stateRef.update({ bettingOpen: false });
-});
 document.getElementById('start-match').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
-  await stateRef.update({ matchActive: true });
-  reviewBetsForAdmin(); // keep your UI function
+  try {
+    await stateRef.update({ matchActive: true });
+    reviewBetsForAdmin(); // keep your UI function
+    alert('Match started.');
+  } catch (e) {
+    alert('Start match failed: ' + (e && e.message ? e.message : e));
+  }
 });
 document.getElementById('end-match').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
-  await stateRef.update({ matchActive: false });
-  // Keep your local MVP tally for now; we’ll move MVP to Firestore in a later step.
-  let matchResult={match:currentMatch, results:[]};
-  Object.keys(users).forEach(u=>{
-    let v=users[u].votesThisMatch;
-    if(v["1st"]) { mvpScores[v["1st"]]+=5; matchResult.results.push({player:v["1st"],points:5,place:"1st"}); }
-    if(v["2nd"]) { mvpScores[v["2nd"]]+=3; matchResult.results.push({player:v["2nd"],points:3,place:"2nd"}); }
-    if(v["3rd"]) { mvpScores[v["3rd"]]+=2; matchResult.results.push({player:v["3rd"],points:2,place:"3rd"}); }
-    users[u].votesThisMatch={}; users[u].voted=false;
-  });
-  mvpHistory.push(matchResult);
-  localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
-  localStorage.setItem('mvpHistory', JSON.stringify(mvpHistory));
-  updateLeaderboards(); updateUI(); alert("Match ended, MVP tallied!");
+  try {
+    await stateRef.update({ matchActive: false });
+    // keep your local MVP tally for now
+    let matchResult={match:currentMatch, results:[]};
+    Object.keys(users).forEach(u=>{
+      let v=users[u].votesThisMatch;
+      if(v["1st"]) { mvpScores[v["1st"]]+=5; matchResult.results.push({player:v["1st"],points:5,place:"1st"}); }
+      if(v["2nd"]) { mvpScores[v["2nd"]]+=3; matchResult.results.push({player:v["2nd"],points:3,place:"2nd"}); }
+      if(v["3rd"]) { mvpScores[v["3rd"]]+=2; matchResult.results.push({player:v["3rd"],points:2,place:"3rd"}); }
+      users[u].votesThisMatch={}; users[u].voted=false;
+    });
+    mvpHistory.push(matchResult);
+    localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
+    localStorage.setItem('mvpHistory', JSON.stringify(mvpHistory));
+    updateLeaderboards(); updateUI();
+    alert('Match ended.');
+  } catch (e) {
+    alert('End match failed: ' + (e && e.message ? e.message : e));
+  }
 });
 
 // ------------------ REVIEW & RESOLVE BETS ------------------
