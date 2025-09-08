@@ -596,22 +596,22 @@ document.getElementById('start-match').addEventListener('click', async ()=>{
   await stateRef.update({ matchActive: true });
   reviewBetsForAdmin(); // keep your UI function
 });
-document.getElementById('end-match').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin) return;
-    matchActive=false; document.getElementById('end-match').disabled=true; document.getElementById('start-match').disabled=false;
-    // Tally votes
-    let matchResult={match:currentMatch, results:[]};
-    Object.keys(users).forEach(u=>{
-        let v=users[u].votesThisMatch;
-        if(v["1st"]) { mvpScores[v["1st"]]+=5; matchResult.results.push({player:v["1st"],points:5,place:"1st"}); }
-        if(v["2nd"]) { mvpScores[v["2nd"]]+=3; matchResult.results.push({player:v["2nd"],points:3,place:"2nd"}); }
-        if(v["3rd"]) { mvpScores[v["3rd"]]+=2; matchResult.results.push({player:v["3rd"],points:2,place:"3rd"}); }
-        users[u].votesThisMatch={}; users[u].voted=false;
-    });
-    mvpHistory.push(matchResult);
-    localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
-    localStorage.setItem('mvpHistory', JSON.stringify(mvpHistory));
-    updateLeaderboards(); updateUI(); alert("Match ended, MVP tallied!");
+document.getElementById('end-match').addEventListener('click', async ()=>{
+  if (!currentUser || !users[currentUser]?.isAdmin) return;
+  await stateRef.update({ matchActive: false });
+  // Keep your local MVP tally for now; we’ll move MVP to Firestore in a later step.
+  let matchResult={match:currentMatch, results:[]};
+  Object.keys(users).forEach(u=>{
+    let v=users[u].votesThisMatch;
+    if(v["1st"]) { mvpScores[v["1st"]]+=5; matchResult.results.push({player:v["1st"],points:5,place:"1st"}); }
+    if(v["2nd"]) { mvpScores[v["2nd"]]+=3; matchResult.results.push({player:v["2nd"],points:3,place:"2nd"}); }
+    if(v["3rd"]) { mvpScores[v["3rd"]]+=2; matchResult.results.push({player:v["3rd"],points:2,place:"3rd"}); }
+    users[u].votesThisMatch={}; users[u].voted=false;
+  });
+  mvpHistory.push(matchResult);
+  localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
+  localStorage.setItem('mvpHistory', JSON.stringify(mvpHistory));
+  updateLeaderboards(); updateUI(); alert("Match ended, MVP tallied!");
 });
 
 // ------------------ REVIEW & RESOLVE BETS ------------------
