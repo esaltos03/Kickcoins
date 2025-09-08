@@ -353,42 +353,35 @@ document.getElementById('login-btn').addEventListener('click', async () => {
     const email = usernameToEmail(username);
 
     try {
-        // First, log in with Firebase Auth
+        // Sign in with Firebase Auth
         await auth.signInWithEmailAndPassword(email, pass);
 
-        // Then, sync user data from Firestore
+        // Load user data from Firestore
         const docRef = db.collection("users").doc(username);
         const doc = await docRef.get();
-
-        if (doc.exists) {
-            users[username] = doc.data();  // use Firestore version
+        if(doc.exists){
+            users[username] = doc.data();
         } else {
-            // Create Firestore doc if missing
+            // If somehow missing, create Firestore user
             users[username] = {
-                password: pass,
-                totalCoins: 100,
-                availableCoins: 100,
-                votesThisMatch: {},
-                bets: [],
-                mvpPoints: 0,
-                history: [],
-                voted: false,
-                isAdmin: username === "admin" ? true : false
+                totalCoins:100,
+                availableCoins:100,
+                votesThisMatch:{},
+                bets:[],
+                mvpPoints:0,
+                history:[],
+                voted:false,
+                isAdmin: username==="admin"
             };
             await docRef.set(users[username]);
         }
 
         currentUser = username;
         showLogin(false);
-        updateUI();
-        populateVoting();
-        populatePlayers();
-        updateLeaderboards();
-        updateHistory();
-        populatePropAdmin();
+        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
 
         alert("Logged in!");
-    } catch (err) {
+    } catch(err){
         alert("Login failed: " + err.message);
     }
 });
