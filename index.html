@@ -301,17 +301,18 @@ const firebaseConfig = {
   apiKey: "AIzaSyAjq_4nylYza2VDiiT6KJq9VZ7auMe7gxo",
   authDomain: "kickcoins-v3.firebaseapp.com",
   projectId: "kickcoins-v3",
-  storageBucket: "kickcoins-v3.firebasestorage.app",
+  storageBucket: "kickcoins-v3.appspot.com", // <-- FIXED
   messagingSenderId: "601991069210",
   appId: "1:601991069210:web:422a5389bcc9dd62845ba3",
   measurementId: "G-16L5MNM4E5"
 };
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
 
-  // Initialize Auth
-  const auth = firebase.auth();
+// Initialize Firebase (exactly once)
+firebase.initializeApp(firebaseConfig);
+
+// Initialize services AFTER app init
+const auth = firebase.auth();
+const db   = firebase.firestore();
 if(!localStorage.getItem('kickcoinsUsers')){
     var users = {
         "Erick": { password:"pass", totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false },
