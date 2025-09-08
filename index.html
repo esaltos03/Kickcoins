@@ -591,12 +591,10 @@ document.getElementById('close-bets').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
   await stateRef.update({ bettingOpen: false });
 });
-document.getElementById('start-match').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin) return;
-    matchActive=true; document.getElementById('start-match').disabled=true; document.getElementById('end-match').disabled=false;
-    updateUI();
-    // Show unresolved bets for admin to review
-    reviewBetsForAdmin();
+document.getElementById('start-match').addEventListener('click', async ()=>{
+  if (!currentUser || !users[currentUser]?.isAdmin) return;
+  await stateRef.update({ matchActive: true });
+  reviewBetsForAdmin(); // keep your UI function
 });
 document.getElementById('end-match').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
