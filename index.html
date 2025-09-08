@@ -375,22 +375,49 @@ document.getElementById('login-btn').addEventListener('click', async ()=>{
 });
 
 // CREATE
+// CREATE (allows create even if local user exists)
 document.getElementById('create-btn').addEventListener('click', async ()=>{
-    const username = document.getElementById('login-username').value.trim();
-    const pass = document.getElementById('login-password').value;
-    if(!username || !pass){ alert("Enter username and password."); return; }
-    if(users[username]){ alert("User exists locally."); return; }
-    try {
-        const email = usernameToEmail(username);
-        const cred = await auth.createUserWithEmailAndPassword(email, pass);
-        await cred.user.updateProfile({ displayName: username });
-        users[username] = { password:pass, totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false };
-        localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+  const username = document.getElementById('login-username').value.trim();
+  const pass = document.getElementById('login-password').value;
+  if(!username || !pass){ alert("Enter username and password."); return; }
+
+  const email = usernameToEmail(username);
+
+  try {
+    // Try to create in Firebase Auth
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({ displayName: username });
+
+    // Ensure local mirror exists (keeps rest of UI happy for now)
+    if(!users[username]){
+      users[username] = { password:pass, totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false };
+      localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+    }
+
+    currentUser = username;
+    showLogin(false);
+    updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
+    alert("Account created & logged in!");
+  } catch(err){
+    if (err && err.code === 'auth/email-already-in-use') {
+      // If account exists in Firebase, just sign in instead
+      try {
+        await auth.signInWithEmailAndPassword(email, pass);
         currentUser = username;
+        if(!users[username]){
+          users[username] = { password:pass, totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false };
+          localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+        }
         showLogin(false);
         updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
-        alert("Account created & logged in!");
-    } catch(err){ alert("Signup failed: " + err.message); }
+        alert("Logged in!");
+      } catch(signInErr){
+        alert("Signup/Login failed: " + signInErr.message);
+      }
+    } else {
+      alert("Signup failed: " + err.message);
+    }
+  }
 });
 
 // LOGOUT
