@@ -965,6 +965,31 @@ document.getElementById('clear-votes').addEventListener('click',()=>{
     localStorage.removeItem('mvpScores'); localStorage.removeItem('mvpHistory'); localStorage.setItem('currentMatch', currentMatch);
     updateLeaderboards(); updateUI(); alert("Votes cleared.");
 });
+// TEMP: Promote the current user to admin. Remove after use.
+document.getElementById('promote-me').addEventListener('click', async ()=>{
+  const u = auth.currentUser;
+  if(!u){ alert("Not signed in."); return; }
+
+  // Safety: only allow if the username is exactly 'admin'
+  const uname = (u.displayName && u.displayName.trim()) ? u.displayName.trim() : (u.email ? u.email.split("@")[0] : "");
+  if (uname !== 'admin') {
+    alert("For safety, only the 'admin' user can self-promote here.");
+    return;
+  }
+
+  try {
+    await db.collection('users').doc(u.uid).set({ roles: { admin: true } }, { merge: true });
+    // Keep your local flag in sync so the Admin tab shows
+    if (!users[uname]) users[uname] = {};
+    users[uname].isAdmin = true;
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+    updateUI();
+
+    alert("You're now an admin. (Remove this button after confirming.)");
+  } catch (e) {
+    alert("Failed to promote: " + e.message);
+  }
+});
 </script>
 </body>
 </html>
