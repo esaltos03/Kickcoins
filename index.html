@@ -667,7 +667,7 @@ function reviewBetsForAdmin(){
     });
 }
 
-function resolveBet(username, bet, won){
+async function resolveBet(username, bet, won){
     if(bet.resolved) return; // safety
     bet.resolved=true;
     bet.won=won;
