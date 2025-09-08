@@ -452,7 +452,21 @@ auth.onAuthStateChanged(async (user) => {
     : (user.email ? user.email.split("@")[0] : "user");
 
   currentUser = username;
-
+  // --- DIAG: confirm UID and roles.admin from Firestore ---
+  try {
+    const uid = user.uid;
+    const snap = await db.collection('users').doc(uid).get();
+    const data = snap.exists ? snap.data() : {};
+    const adminVal = data && data.roles ? data.roles.admin : undefined;
+    alert(
+      'UID: ' + uid +
+      '\nDoc exists: ' + snap.exists +
+      '\nroles.admin: ' + String(adminVal) +
+      ' (type: ' + typeof adminVal + ')'
+    );
+  } catch (e) {
+    alert('DIAG user doc read failed: ' + (e.message || e));
+  }
   // Keep your existing local model alive for now
   if (!users[username]) {
     users[username] = { password: "", totalCoins: 100, availableCoins: 0, votesThisMatch: {}, bets: [], mvpPoints: 0, history: [], voted: false };
