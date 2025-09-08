@@ -447,6 +447,15 @@ auth.onAuthStateChanged(async (user) => {
     return;
   }
 
+// React to Firebase login state changes (SAFE VERSION)
+auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    currentUser = null;
+    showLogin(true);
+    alert('AUTH: not signed in');
+    return;
+  }
+
   // Derive username from displayName or from email before "@"
   const username = (user.displayName && user.displayName.trim())
     ? user.displayName.trim()
@@ -457,20 +466,24 @@ auth.onAuthStateChanged(async (user) => {
     const uid = user.uid;
     const userRef = db.collection('users').doc(uid);
 
-    // Ensure profile exists (safe no-op if it already does)
-    await userRef.set({
-      email: user.email || null,
-      username: username,
-      roles: { admin: false },
-      coins: 100,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    // 1) Read current doc FIRST (do not overwrite roles)
+    let snap = await userRef.get();
 
-    const snap = await userRef.get();
+    // 2) If it doesn't exist, create a minimal doc WITHOUT touching roles
+    if (!snap.exists) {
+      await userRef.set({
+        email: user.email || null,
+        username: username,
+        coins: 100,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      snap = await userRef.get(); // re-read after creating
+    }
+
     const data = snap.exists ? snap.data() : {};
     const adminVal = data && data.roles ? data.roles.admin : undefined;
 
-    // <<< THIS alert is what you should see right after signing in >>>
+    // DIAG popup so you can see it once
     alert(
       'AUTH: signed in' +
       '\nUID: ' + uid +
@@ -478,7 +491,7 @@ auth.onAuthStateChanged(async (user) => {
       '\nroles.admin: ' + String(adminVal) + ' (type: ' + typeof adminVal + ')'
     );
 
-    // Keep your local model alive + sync local admin flag from Firestore
+    // 3) Keep local mirror and sync admin flag from Firestore
     if (!users[username]) {
       users[username] = { password: "", totalCoins: 100, availableCoins: 0, votesThisMatch: {}, bets: [], mvpPoints: 0, history: [], voted: false };
     }
