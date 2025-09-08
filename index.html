@@ -435,8 +435,18 @@ auth.onAuthStateChanged(user=>{
         const username = user.displayName || user.email.split("@")[0];
         currentUser = username;
         if(!users[username]){
-            users[username] = { password:"", totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false };
-            localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+    users[username] = {
+        totalCoins:100,
+        availableCoins:100,
+        votesThisMatch:{},
+        bets:[],
+        mvpPoints:0,
+        history:[],
+        voted:false,
+        isAdmin: username==="admin"
+    };
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+}
         }
         showLogin(false);
         updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
