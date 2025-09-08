@@ -622,7 +622,6 @@ document.getElementById('open-bets').addEventListener('click', async ()=>{
   }
 });
   // We will handle coins later when we move coins to Firestore.
-});
 document.getElementById('close-bets').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
   try {
