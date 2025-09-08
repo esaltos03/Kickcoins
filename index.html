@@ -517,7 +517,8 @@ function populateVoting(){
     });
 }
 document.getElementById('submit-votes').addEventListener('click',()=>{
-    if(!matchActive){ alert("Match not started yet."); return; }
+    const st = window.__appState || {};
+if(!st.matchActive){ alert("Match not started yet."); return; }
     if(users[currentUser].voted){ alert("Already voted."); return; }
     let first=document.getElementById('vote1').value;
     let second=document.getElementById('vote2').value;
