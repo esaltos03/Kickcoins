@@ -442,6 +442,40 @@ auth.onAuthStateChanged(async (user) => {
   updateHistory();
   populatePropAdmin();
 });
+// ---------- FIRESTORE APP STATE ----------
+const stateRef = db.collection('app').doc('state');
+
+// Ensure the state doc exists once (safe to call always)
+async function ensureState() {
+  const snap = await stateRef.get();
+  if (!snap.exists) {
+    await stateRef.set({ bettingOpen: false, matchActive: false, currentMatch: 0 });
+  }
+}
+ensureState();
+
+// Real-time listener to reflect buttons & keep local mirror in sync
+stateRef.onSnapshot((snap) => {
+  if (!snap.exists) return;
+  const st = snap.data();
+  window.__appState = st;
+
+  // keep your local currentMatch in sync for the parts still using it
+  if (typeof currentMatch !== 'undefined') currentMatch = Number(st.currentMatch || 0);
+
+  // Admin button enable/disable (guard if elements exist)
+  const ob = document.getElementById('open-bets');
+  const cb = document.getElementById('close-bets');
+  const sm = document.getElementById('start-match');
+  const em = document.getElementById('end-match');
+
+  const userIsAdmin = (currentUser && users[currentUser] && users[currentUser].isAdmin) ? true : false;
+
+  if (ob) ob.disabled = !userIsAdmin || !!st.bettingOpen;
+  if (cb) cb.disabled = !userIsAdmin || !st.bettingOpen;
+  if (sm) sm.disabled = !userIsAdmin || !!st.matchActive || !!st.bettingOpen;
+  if (em) em.disabled = !userIsAdmin || !st.matchActive;
+});
 // ------------------ TAB NAV ------------------
 document.querySelectorAll('.tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
