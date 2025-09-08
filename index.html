@@ -309,7 +309,10 @@ const db = firebase.firestore();
 
   // Initialize Auth
   const auth = firebase.auth();
-var users = {}; // empty, we will load from Firestore when user logs in
+// --- STEP 3: Initialize users from localStorage OR empty ---
+var users = localStorage.getItem('kickcoinsUsers') 
+    ? JSON.parse(localStorage.getItem('kickcoinsUsers')) 
+    : {};
 
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Esdras","Alan","Byron","Josh"];
 let propEntities = localStorage.getItem('propEntities') ? JSON.parse(localStorage.getItem('propEntities')) : [...players];
