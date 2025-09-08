@@ -359,17 +359,35 @@ document.getElementById('login-btn').addEventListener('click', async ()=>{
     const pass = document.getElementById('login-password').value;
     if(!username || !pass){ alert("Enter username and password."); return; }
     try {
-        const email = usernameToEmail(username);
-        await auth.signInWithEmailAndPassword(email, pass);
-        currentUser = username;
-        if(!users[username]){
-            users[username] = { password:pass, totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false };
-            localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+        await auth.signInWithEmailAndPassword(email, password);
+        const doc = await db.collection("users").doc(username).get();
+        if (doc.exists) {
+            users[username] = doc.data();
+        } else {
+            users[username] = {
+                password,
+                totalCoins: 100,
+                availableCoins: 100,
+                votesThisMatch: {},
+                bets: [],
+                mvpPoints: 0,
+                history: [],
+                voted: false
+            };
+            await db.collection("users").doc(username).set(users[username]);
         }
+
+        currentUser = username;
         showLogin(false);
-        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
-        alert("Logged in!");
-    } catch(err){ alert("Login failed: " + err.message); }
+        updateUI();
+        populateVoting();
+        populatePlayers();
+        updateLeaderboards();
+        updateHistory();
+        populatePropAdmin();
+    } catch (err) {
+        alert("Login failed: " + err.message);
+    }
 });
 
 // CREATE
