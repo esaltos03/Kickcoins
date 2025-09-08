@@ -387,6 +387,7 @@ document.getElementById('create-btn').addEventListener('click', async ()=>{
         currentUser = username;
         showLogin(false);
         updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
+        await db.collection("users").doc(username).set(users[username]);
         alert("Account created & logged in!");
     } catch(err){ alert("Signup failed: " + err.message); }
 });
