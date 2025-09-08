@@ -578,25 +578,14 @@ document.getElementById('submit-bets').addEventListener('click',()=>{
 });
 
 // ------------------ ADMIN BET CONTROL ------------------
-document.getElementById('open-bets').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin) return;
-    bettingOpen=true; document.getElementById('open-bets').disabled=true; document.getElementById('close-bets').disabled=false;
-    currentMatch+=1; localStorage.setItem('currentMatch', currentMatch);
-    // Give all users 10 coins from totalCoins
-    Object.keys(users).forEach(u=>{
-        if(!users[u].isAdmin){
-            let give=10;
-            if(users[u].totalCoins >= give){
-                users[u].totalCoins -= give;
-                users[u].availableCoins += give;
-            } else {
-                users[u].availableCoins += users[u].totalCoins;
-                users[u].totalCoins = 0;
-            }
-            users[u].voted=false;
-        }
-    });
-    updateUI();
+document.getElementById('open-bets').addEventListener('click', async ()=>{
+  if (!currentUser || !users[currentUser]?.isAdmin) return;
+  await stateRef.update({
+    bettingOpen: true,
+    matchActive: false,
+    currentMatch: firebase.firestore.FieldValue.increment(1)
+  });
+  // We will handle coins later when we move coins to Firestore.
 });
 document.getElementById('close-bets').addEventListener('click',()=>{
     if(!currentUser || !users[currentUser].isAdmin) return;
