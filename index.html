@@ -608,13 +608,15 @@ if(!st.bettingOpen){ alert("Betting not open."); return; }
 });
 
 // ------------------ ADMIN BET CONTROL ------------------
-document.getElementById('open-bets').addEventListener('click', async ()=>{
+document.getElementById('close-bets').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
-  await stateRef.update({
-    bettingOpen: true,
-    matchActive: false,
-    currentMatch: firebase.firestore.FieldValue.increment(1)
-  });
+  try {
+    await stateRef.update({ bettingOpen: false });
+    alert('Betting closed.');
+  } catch (e) {
+    alert('Close betting failed: ' + (e && e.message ? e.message : e));
+  }
+});
   // We will handle coins later when we move coins to Firestore.
 });
 document.getElementById('close-bets').addEventListener('click', async ()=>{
