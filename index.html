@@ -402,20 +402,47 @@ document.getElementById('logout-btn').addEventListener('click', async ()=>{
 });
 
 // React to Firebase login state changes
-auth.onAuthStateChanged(user=>{
-    if(user){
-        const username = user.displayName || user.email.split("@")[0];
-        currentUser = username;
-        if(!users[username]){
-            users[username] = { password:"", totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false };
-            localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-        }
-        showLogin(false);
-        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
-    }else{
-        currentUser=null;
-        showLogin(true);
-    }
+auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    currentUser = null;
+    showLogin(true);
+    return;
+  }
+
+  // Derive username from displayName or from email before "@"
+  const username = (user.displayName && user.displayName.trim())
+    ? user.displayName.trim()
+    : (user.email ? user.email.split("@")[0] : "user");
+
+  currentUser = username;
+
+  // Keep your existing local model alive for now
+  if (!users[username]) {
+    users[username] = { password: "", totalCoins: 100, availableCoins: 0, votesThisMatch: {}, bets: [], mvpPoints: 0, history: [], voted: false };
+    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+  }
+
+  // --- Ensure Firestore profile by UID (prevents future bricks) ---
+  const userRef = db.collection("users").doc(user.uid);
+  const snap = await userRef.get();
+  if (!snap.exists) {
+    await userRef.set({
+      email: user.email || null,
+      username: username,
+      roles: { admin: false },
+      coins: 100,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  }
+
+  // Proceed with your UI
+  showLogin(false);
+  updateUI();
+  populateVoting();
+  populatePlayers();
+  updateLeaderboards();
+  updateHistory();
+  populatePropAdmin();
 });
 // ------------------ TAB NAV ------------------
 document.querySelectorAll('.tab').forEach(tab=>{
