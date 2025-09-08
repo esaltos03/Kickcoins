@@ -363,22 +363,22 @@ document.getElementById('login-btn').addEventListener('click', async () => {
         // Load user data from Firestore
         const docRef = db.collection("users").doc(username);
         const doc = await docRef.get();
-        if(doc.exists){
-            users[username] = doc.data();
-        } else {
-            // If somehow missing, create Firestore user
-            users[username] = {
-                totalCoins:100,
-                availableCoins:100,
-                votesThisMatch:{},
-                bets:[],
-                mvpPoints:0,
-                history:[],
-                voted:false,
-                isAdmin: username==="admin"
-            };
-            await docRef.set(users[username]);
-        }
+        users[username] = doc.exists 
+    ? doc.data() 
+    : {
+        totalCoins: 100,
+        availableCoins: 100,
+        votesThisMatch: {},
+        bets: [],
+        mvpPoints: 0,
+        history: [],
+        voted: false,
+        isAdmin: false
+      };
+
+if (!doc.exists) {
+    await docRef.set(users[username]);
+}
 
         currentUser = username;
         showLogin(false);
