@@ -336,7 +336,7 @@ if(!localStorage.getItem('kickcoinsUsers')){
     var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
 }
 
-const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Byron"];
+const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Esdras","Alan","Byron","Josh"];
 let propEntities = localStorage.getItem('propEntities') ? JSON.parse(localStorage.getItem('propEntities')) : [...players];
 players.forEach(p=>{ if(!mvpScores[p]) mvpScores[p]=0; });
 
@@ -348,7 +348,14 @@ localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
 
 let currentMatch = localStorage.getItem('currentMatch') ? parseInt(localStorage.getItem('currentMatch')) : 0;
 let adminBetsUnsub = null; // live listener for unresolved bets (Firestore)
-
+// === MVP (Firestore-driven) ===
+let myVoteUnsub = null;
+function detachMyVote() {
+  if (myVoteUnsub) {
+    myVoteUnsub();
+    myVoteUnsub = null;
+  }
+}
 let currentUser=null;
 // === Firestore-backed "me" cache (single source of truth for balances/admin) ===
 let __me = { coins: 0, availableCoins: 0, roles: { admin: false }, username: "" };
