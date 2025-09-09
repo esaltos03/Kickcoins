@@ -991,7 +991,7 @@ document.getElementById('submit-bets').addEventListener('click', async ()=>{
 });
 // ------------------ ADMIN BET CONTROL ------------------
 document.getElementById('open-bets').addEventListener('click', async ()=>{
-  if (!currentUser || !users[currentUser]?.isAdmin) return;
+  if (!currentUser || !isAdmin()) return;
 
   try {
     // 1) Flip app state (increment match, open betting, ensure match not active)
@@ -1032,7 +1032,7 @@ document.getElementById('open-bets').addEventListener('click', async ()=>{
 });
   // We will handle coins later when we move coins to Firestore.
 document.getElementById('close-bets').addEventListener('click', async ()=>{
-  if (!currentUser || !users[currentUser]?.isAdmin) return;
+  if (!currentUser || !isAdmin()) return;
 
   try {
     // 1) Flip app state
@@ -1065,7 +1065,7 @@ document.getElementById('close-bets').addEventListener('click', async ()=>{
   }
 });
 document.getElementById('start-match').addEventListener('click', async ()=>{
-  if (!currentUser || !users[currentUser]?.isAdmin) return;
+  if (!currentUser || !isAdmin()) return;
   try {
     await stateRef.update({ matchActive: true });
     reviewBetsForAdminFS(); // <-- Firestore version (REPLACED LINE)
@@ -1075,7 +1075,7 @@ document.getElementById('start-match').addEventListener('click', async ()=>{
   }
 });
 document.getElementById('end-match').addEventListener('click', async ()=>{
-  if (!currentUser || !users[currentUser]?.isAdmin) return;
+  if (!currentUser || !isAdmin()) return;
   try {
     await stateRef.update({ matchActive: false });
 
