@@ -548,6 +548,9 @@ stateRef.onSnapshot((snap) => {
   if (cb) cb.disabled = !userIsAdmin || !st.bettingOpen;
   if (sm) sm.disabled = !userIsAdmin || !!st.matchActive || !!st.bettingOpen;
   if (em) em.disabled = !userIsAdmin || !st.matchActive;
+
+  // 🔴 NEW LINE: attach/update the live "My Bets" listener for this match
+  maybeAttachMyBetsListener(Number(st.currentMatch || 0));
 });
 // ------------------ TAB NAV ------------------
 document.querySelectorAll('.tab').forEach(tab=>{
