@@ -662,6 +662,129 @@ function renderMyBets(bets){
   // Prepend so it appears above your old local history (which we’ll retire later)
   container.prepend(wrap);
 }
+// ========== FULL BET HISTORY (FIRESTORE) – RENDERER ==========
+function renderFullHistoryFS(bets) {
+  const container = document.getElementById('history-container');
+  if (!container) return;
+
+  // Remove old FS section if present
+  const old = document.getElementById('fs-full-history');
+  if (old) old.remove();
+
+  const wrap = document.createElement('div');
+  wrap.id = 'fs-full-history';
+  wrap.className = 'match-card';
+
+  const title = document.createElement('strong');
+  title.textContent = 'Full Bet History (Firestore)';
+  wrap.appendChild(title);
+
+  // Error state shortcut
+  if (bets && bets.__error) {
+    const p = document.createElement('div');
+    p.style.color = 'red';
+    p.textContent = 'Error: ' + bets.__error;
+    wrap.appendChild(p);
+    container.appendChild(wrap);
+    return;
+  }
+
+  if (!bets || bets.length === 0) {
+    const p = document.createElement('div');
+    p.textContent = 'No bets yet.';
+    wrap.appendChild(p);
+    container.appendChild(wrap);
+    return;
+  }
+
+  // Group by match number
+  const byMatch = {};
+  bets.forEach(b => {
+    const m = Number(b.match || 0) || 0;
+    if (!byMatch[m]) byMatch[m] = [];
+    byMatch[m].push(b);
+  });
+
+  // Sort matches newest->oldest
+  const matchNums = Object.keys(byMatch).map(n => Number(n)).sort((a,b)=>b-a);
+
+  matchNums.forEach(matchNum => {
+    const section = document.createElement('div');
+    section.className = 'match-card';
+    const header = document.createElement('strong');
+    header.textContent = `Match ${matchNum}`;
+    section.appendChild(header);
+
+    const ul = document.createElement('ul');
+    let totalStake = 0, totalWon = 0;
+
+    // Sort each match’s bets newest->oldest
+    const rows = byMatch[matchNum].slice().sort((a,b)=>{
+      const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+      const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+      return tb - ta;
+    });
+
+    rows.forEach(b => {
+      const li = document.createElement('li');
+      li.textContent = `${b.player} - ${b.prop} (${b.odds}x) | Amount: ${b.amount} | ${b.resolved ? (b.won ? 'Won' : 'Lost') : 'Pending'}`;
+      if (!b.resolved) li.style.color = 'yellow';
+      else li.style.color = b.won ? 'green' : 'red';
+      ul.appendChild(li);
+
+      totalStake += Number(b.amount || 0);
+      if (b.resolved && b.won) {
+        totalWon += (Number(b.amount||0) * Number(b.odds||0)) + Number(b.amount||0);
+      }
+    });
+
+    section.appendChild(ul);
+
+    const totals = document.createElement('div');
+    totals.className = 'total total-coins';
+    totals.textContent = `Total Coins Bet: ${totalStake} | Total Coins Won: ${totalWon}`;
+    if (totalWon < 10) totals.style.color = 'red';
+    else if (totalWon === 10) totals.style.color = 'yellow';
+    else totals.style.color = 'green';
+    section.appendChild(totals);
+
+    wrap.appendChild(section);
+  });
+
+  // Put full history BELOW the live “My Bets” box
+  container.appendChild(wrap);
+}
+
+// ========== FULL BET HISTORY (FIRESTORE) – LOADER ==========
+async function loadFullBetHistoryFS() {
+  try {
+    const u = auth.currentUser;
+    if (!u) {
+      renderFullHistoryFS([]); // signed-out -> empty
+      return;
+    }
+
+    // Query all "bets" subcollections, only my uid; sort on client
+    const q = db.collectionGroup('bets').where('uid','==', u.uid);
+    const qsnap = await q.get();
+
+    const rows = [];
+    qsnap.forEach(doc => rows.push({ id: doc.id, ...doc.data() }));
+
+    // Sort: newest match first, then newest createdAt first
+    rows.sort((a,b) => {
+      const ma = Number(a.match || 0), mb = Number(b.match || 0);
+      if (mb !== ma) return mb - ma;
+      const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+      const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+      return tb - ta;
+    });
+
+    renderFullHistoryFS(rows);
+  } catch (err) {
+    renderFullHistoryFS({ __error: (err && err.message ? err.message : String(err)) });
+  }
+}
 async function renderCoinLeaderboardFS(){
   const tbody = document.querySelector('#coin-leaderboard tbody');
   if (!tbody) return;
