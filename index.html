@@ -552,6 +552,85 @@ stateRef.onSnapshot((snap) => {
   // 🔴 NEW LINE: attach/update the live "My Bets" listener for this match
   maybeAttachMyBetsListener(Number(st.currentMatch || 0));
 });
+function maybeAttachMyBetsListener(matchNum){
+  // Only if signed in and match number looks valid
+  const u = auth.currentUser;
+  if (!u || !Number.isFinite(matchNum) || matchNum <= 0) {
+    if (myBetsUnsub) { myBetsUnsub(); myBetsUnsub = null; }
+    renderMyBets([]); // clear the section
+    return;
+  }
+
+  // Re-subscribe if match changed
+  if (myBetsUnsub) { myBetsUnsub(); myBetsUnsub = null; }
+
+  const q = db.collection('matches')
+              .doc(String(matchNum))
+              .collection('bets')
+              .where('uid','==', u.uid);
+
+  myBetsUnsub = q.onSnapshot((qsnap)=>{
+    const bets = [];
+    qsnap.forEach(doc => bets.push({ id: doc.id, ...doc.data() }));
+    renderMyBets(bets);
+  }, (err)=>{
+    alert('Live bets listener error: ' + (err && err.message ? err.message : String(err)));
+  });
+}
+
+function renderMyBets(bets){
+  // We’ll show this at the TOP of the History card
+  const container = document.getElementById('history-container');
+  if (!container) return;
+
+  // Remove existing FS section if present (so we can re-render)
+  const old = document.getElementById('fs-my-bets');
+  if (old) old.remove();
+
+  const wrap = document.createElement('div');
+  wrap.id = 'fs-my-bets';
+  wrap.className = 'match-card';
+
+  const title = document.createElement('strong');
+  title.textContent = 'My Live Bets (Firestore)';
+  wrap.appendChild(title);
+
+  if (!bets.length) {
+    const p = document.createElement('div');
+    p.textContent = 'No bets yet for this match.';
+    wrap.appendChild(p);
+  } else {
+    const ul = document.createElement('ul');
+    let totalStake = 0, totalWon = 0;
+
+    bets.forEach(b => {
+      const li = document.createElement('li');
+      li.textContent = `${b.player} - ${b.prop} (${b.odds}x) | Amount: ${b.amount} | ${b.resolved ? (b.won ? 'Won' : 'Lost') : 'Pending'}`;
+      if (!b.resolved) li.style.color = 'yellow';
+      else li.style.color = b.won ? 'green' : 'red';
+      ul.appendChild(li);
+
+      totalStake += Number(b.amount || 0);
+      if (b.resolved && b.won) {
+        totalWon += (Number(b.amount||0) * Number(b.odds||0)) + Number(b.amount||0);
+      }
+    });
+
+    wrap.appendChild(ul);
+
+    const totals = document.createElement('div');
+    totals.className = 'total total-coins';
+    totals.textContent = `Total Coins Bet: ${totalStake} | Total Coins Won: ${totalWon}`;
+    if (totalWon < 10) totals.style.color = 'red';
+    else if (totalWon === 10) totals.style.color = 'yellow';
+    else totals.style.color = 'green';
+
+    wrap.appendChild(totals);
+  }
+
+  // Prepend so it appears above your old local history (which we’ll retire later)
+  container.prepend(wrap);
+}
 // ------------------ TAB NAV ------------------
 document.querySelectorAll('.tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
