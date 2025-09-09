@@ -1136,30 +1136,65 @@ document.getElementById('start-match').addEventListener('click', async ()=>{
 });
 document.getElementById('end-match').addEventListener('click', async ()=>{
   if (!currentUser || !isAdmin()) return;
+
   try {
+    // 1) Mark match as inactive first
     await stateRef.update({ matchActive: false });
 
-    // 🔴 NEW: clean up the Firestore admin bets listener
+    // 2) Resolve Firestore listener for admin cards
     if (adminBetsUnsub) { adminBetsUnsub(); adminBetsUnsub = null; }
 
-    // keep your local MVP tally for now
-    let matchResult={match:currentMatch, results:[]};
-    Object.keys(users).forEach(u=>{
-      let v=users[u].votesThisMatch;
-      if(v["1st"]) { mvpScores[v["1st"]]+=5; matchResult.results.push({player:v["1st"],points:5,place:"1st"}); }
-      if(v["2nd"]) { mvpScores[v["2nd"]]+=3; matchResult.results.push({player:v["2nd"],points:3,place:"2nd"}); }
-      if(v["3rd"]) { mvpScores[v["3rd"]]+=2; matchResult.results.push({player:v["3rd"],points:2,place:"3rd"}); }
-      users[u].votesThisMatch={}; users[u].voted=false;
-    });
-    mvpHistory.push(matchResult);
-    localStorage.setItem('mvpScores', JSON.stringify(mvpScores));
-    localStorage.setItem('mvpHistory', JSON.stringify(mvpHistory));
-    updateLeaderboards(); updateUI();
-    alert('Match ended.');
+    // 3) Compute MVP from votes in this match + write results + update totals
+    const st = window.__appState || {};
+    const matchNum = Number(st.currentMatch || 0);
+    if (!matchNum) throw new Error('No match number to close.');
+
+    await computeMvpAndPersistFS(matchNum);
+
+    alert('Match ended & MVP tallied.');
+    updateLeaderboards(); // refresh MVP UI
   } catch (e) {
     alert('End match failed: ' + (e && e.message ? e.message : e));
   }
 });
+async function computeMvpAndPersistFS(matchNum){
+  // read all votes for the match
+  const votesSnap = await db.collection('matches').doc(String(matchNum)).collection('votes').get();
+
+  // tally points
+  const tally = {}; // player -> points
+  const results = []; // for pretty match card history
+  votesSnap.forEach(doc=>{
+    const v = doc.data() || {};
+    if (v.first)  tally[v.first]  = (tally[v.first]  || 0) + 5;
+    if (v.second) tally[v.second] = (tally[v.second] || 0) + 3;
+    if (v.third)  tally[v.third]  = (tally[v.third]  || 0) + 2;
+  });
+
+  // build per-player result array (sorted desc points)
+  const rows = Object.keys(tally).map(player=>({ player, points: tally[player] }));
+  rows.sort((a,b)=>b.points - a.points);
+
+  // decorate with place medals for top 3 (optional / keeps your UI style)
+  rows.forEach((r, i)=>{
+    r.place = (i===0?'1st':i===1?'2nd':i===2?'3rd':''); // empty for >3, still shows points
+  });
+
+  // write match result doc
+  await db.collection('matches').doc(String(matchNum)).collection('mvpResult').doc('summary').set({
+    match: matchNum,
+    results: rows,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+
+  // update global mvpScores (increment per player)
+  const batch = db.batch();
+  rows.forEach(r=>{
+    const ref = db.collection('mvpScores').doc(r.player);
+    batch.set(ref, { points: firebase.firestore.FieldValue.increment(r.points) }, { merge: true });
+  });
+  await batch.commit();
+}
 
 // ------------------ REVIEW & RESOLVE BETS ------------------
 // ------------------ REVIEW & RESOLVE BETS ------------------
