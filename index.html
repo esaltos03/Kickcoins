@@ -858,16 +858,32 @@ function populatePlayers(){
     sel.addEventListener('change', populateProps);
 }
 function populateProps(){
-    let container=document.getElementById('props-container'); container.innerHTML="";
-    let player=document.getElementById('player-select').value;
-    propsTemplate[player].forEach(prop=>{
-        let card=document.createElement("div"); card.className="prop";
-        let label=document.createElement("span"); label.textContent=`${prop.name} (${prop.odds}x)`; label.className="green";
-        let input=document.createElement("input"); input.type="number"; input.min=0; input.max=users[currentUser].availableCoins; input.dataset.odds=prop.odds;
-        input.oninput=updatePotentialPayout;
-        card.appendChild(label); card.appendChild(input); container.appendChild(card);
-    });
-    updatePotentialPayout();
+  const container = document.getElementById('props-container');
+  container.innerHTML = "";
+  const player = document.getElementById('player-select').value;
+  const avail = Number(__me.availableCoins || 0);
+
+  (propsTemplate[player] || []).forEach(prop=>{
+    const card = document.createElement("div");
+    card.className = "prop";
+
+    const label = document.createElement("span");
+    label.textContent = `${prop.name} (${prop.odds}x)`;
+    label.className = "green";
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = 0;
+    input.max = avail;                      // 🔴 from Firestore now
+    input.dataset.odds = prop.odds;
+    input.oninput = updatePotentialPayout;
+
+    card.appendChild(label);
+    card.appendChild(input);
+    container.appendChild(card);
+  });
+
+  updatePotentialPayout();
 }
 function updatePotentialPayout(){
     const container=document.getElementById('props-container');
