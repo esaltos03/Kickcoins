@@ -1410,31 +1410,6 @@ async function updateLeaderboards(){
   // NOTE: coin leaderboard is handled elsewhere (renderCoinLeaderboardFS)
 }
 
-  // MVP history (still local for now)
-  const mh=document.getElementById('mvp-history');
-  mh.innerHTML="";
-  mvpHistory.forEach(m=>{
-    const div=document.createElement("div"); div.className="mvp-card";
-    div.innerHTML = `<strong>Match ${m.match}</strong>`;
-    m.results.forEach(r=>{
-      let emoji = '';
-      switch(r.points){
-        case 5: emoji='🥇'; break;
-        case 3: emoji='🥈'; break;
-        case 2: emoji='🥉'; break;
-        default: emoji = r.points >= 1 && r.points <= 7 ? '🪨' : '🍆';
-      }
-      const resDiv = document.createElement('div');
-      resDiv.className='result';
-      resDiv.textContent = `${emoji} ${r.place}: ${r.player} (+${r.points})`;
-      div.appendChild(resDiv);
-    });
-    mh.appendChild(div);
-  });
-
-  // 🔕 Do NOT touch #coin-leaderboard here anymore — Firestore code handles it.
-}
-
 // ------------------ HISTORY ------------------
 function updateHistory(){
     const container = document.getElementById('history-container'); 
