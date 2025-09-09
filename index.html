@@ -890,7 +890,7 @@ document.getElementById('start-match').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
   try {
     await stateRef.update({ matchActive: true });
-    reviewBetsForAdmin(); // keep your UI function
+    reviewBetsForAdminFS(); // <-- Firestore version (REPLACED LINE)
     alert('Match started.');
   } catch (e) {
     alert('Start match failed: ' + (e && e.message ? e.message : e));
