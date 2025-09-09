@@ -448,74 +448,53 @@ document.getElementById('logout-btn').addEventListener('click', async ()=>{
 
 // React to Firebase login state changes (SAFE VERSION)
 auth.onAuthStateChanged(async (user) => {
+  // Clean up previous listener
+  if (__meUnsub) { try { __meUnsub(); } catch(_){} __meUnsub = null; }
+
   if (!user) {
     currentUser = null;
+    __me = { coins: 0, availableCoins: 0, roles: { admin:false }, username: "" };
     showLogin(true);
-    alert('AUTH: not signed in');
+    updateUI();
     return;
   }
 
-  // Derive username from displayName or from email before "@"
+  // derive username from profile or email
   const username = (user.displayName && user.displayName.trim())
     ? user.displayName.trim()
     : (user.email ? user.email.split("@")[0] : "user");
   currentUser = username;
 
-  try {
-    const uid = user.uid;
-    const userRef = db.collection('users').doc(uid);
-
-let snap = await userRef.get();
-if (!snap.exists) {
-  await userRef.set({
-    email: user.email || null,
-    username: username,
-    coins: 100,
-    availableCoins: 0,            // keep balances defined
-    roles: { admin: false },      // 🔴 ensure all new users are non-admin by default
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  }, { merge: true });
-  snap = await userRef.get();
-}
-    const data = snap.exists ? snap.data() : {};
-    const adminVal = data && data.roles ? data.roles.admin : undefined;
-
-    // Keep while debugging; remove later if you want
-    alert(
-      'AUTH: signed in' +
-      '\nUID: ' + uid +
-      '\nDoc exists: ' + snap.exists +
-      '\nroles.admin: ' + String(adminVal) + ' (type: ' + typeof adminVal + ')'
-    );
-
-    // Keep local model happy + sync admin flag from Firestore
-    if (!users[username]) {
-      users[username] = { password: "", totalCoins: 100, availableCoins: 0, votesThisMatch: {}, bets: [], mvpPoints: 0, history: [], voted: false };
-    }
-    users[username].isAdmin = (adminVal === true);
-    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-      // === LIVE BALANCE LISTENER FOR SIGNED-IN USER ===
-if (window.__userUnsub) { try { window.__userUnsub(); } catch(_){} }
-window.__userUnsub = db.collection('users').doc(user.uid).onSnapshot((doc) => {
-  const d = doc.exists ? doc.data() : {};
-  // fallbacks so we don't crash on undefined
-  const totalCoins = typeof d.coins === 'number' ? d.coins : 100;
-  const available = typeof d.availableCoins === 'number' ? d.availableCoins : 0;
-
-  // keep the local mirror just for rendering that header/UI
-  if (!users[username]) users[username] = {};
-  users[username].totalCoins = totalCoins;
-  users[username].availableCoins = available;
-  localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-  updateUI();
-});
-  } catch (e) {
-    alert('AUTH DIAG error: ' + (e && e.message ? e.message : String(e)));
+  // ensure user doc exists
+  const userRef = db.collection('users').doc(user.uid);
+  let snap = await userRef.get();
+  if (!snap.exists) {
+    await userRef.set({
+      email: user.email || null,
+      username,
+      coins: 100,
+      availableCoins: 0,
+      roles: { admin: false },
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    snap = await userRef.get();
   }
 
-  // Proceed with your UI
+  // live listener to my balances + roles
+  __meUnsub = userRef.onSnapshot((doc) => {
+    const d = doc.exists ? (doc.data() || {}) : {};
+    __me = {
+      coins: typeof d.coins === 'number' ? d.coins : 100,
+      availableCoins: typeof d.availableCoins === 'number' ? d.availableCoins : 0,
+      roles: d.roles || { admin: false },
+      username: d.username || username
+    };
+    updateUI();           // header + admin tab vis
+    renderBalanceFromFS(); // betting tab header
+  });
+
+  // proceed
   showLogin(false);
-  updateUI();
   populateVoting();
   populatePlayers();
   updateLeaderboards();
