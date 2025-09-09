@@ -654,13 +654,40 @@ if(!st.bettingOpen){ alert("Betting not open."); return; }
 // ------------------ ADMIN BET CONTROL ------------------
 document.getElementById('open-bets').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
+
   try {
+    // 1) Flip app state (increment match, open betting, ensure match not active)
     await stateRef.set({
       bettingOpen: true,
       matchActive: false,
       currentMatch: firebase.firestore.FieldValue.increment(1)
     }, { merge: true });
-    alert('Betting opened.');
+
+    // 2) Give coins to all non-admin users (batch for speed)
+    const usersSnap = await db.collection('users').get();
+    const batch = db.batch();
+    usersSnap.forEach(doc => {
+      const d = doc.data() || {};
+      const isAdmin = d.roles && d.roles.admin === true;
+      if (isAdmin) return;
+
+      const total = typeof d.coins === 'number' ? d.coins : 100;
+      const avail = typeof d.availableCoins === 'number' ? d.availableCoins : 0;
+
+      // same logic you had locally:
+      const grant = Math.min(10, total);       // cannot grant more than they have
+      const newTotal = total - grant;
+      const newAvail = avail + grant;
+
+      batch.set(doc.ref, {
+        coins: newTotal,
+        availableCoins: newAvail,
+        voted: false // optional: clears voted for new match, like before
+      }, { merge: true });
+    });
+    await batch.commit();
+
+    alert('Betting opened and balances granted.');
   } catch (e) {
     alert('Open betting failed: ' + (e && e.code ? e.code + ' - ' : '') + (e && e.message ? e.message : e));
   }
