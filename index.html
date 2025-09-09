@@ -352,6 +352,12 @@ let currentMatch = localStorage.getItem('currentMatch') ? parseInt(localStorage.
 let adminBetsUnsub = null; // live listener for unresolved bets (Firestore)
 
 let currentUser=null;
+// === Firestore-backed "me" cache (single source of truth for balances/admin) ===
+let __me = { coins: 0, availableCoins: 0, roles: { admin: false }, username: "" };
+let __meUnsub = null;
+
+function isSignedIn(){ return !!auth.currentUser; }
+function isAdmin(){ return !!(__me.roles && __me.roles.admin === true); }
 let myBetsUnsub = null; // live listener for "My Bets" (Firestore)
 
 // ------------------ LOGIN ------------------
