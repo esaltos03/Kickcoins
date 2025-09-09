@@ -830,28 +830,83 @@ function updateUI(){
   }
 }
 
-// ------------------ MVP VOTING ------------------
+// ------------------ MVP VOTING (Firestore) ------------------
 function populateVoting(){
-    ["vote1","vote2","vote3"].forEach(id=>{
-        let sel=document.getElementById(id); sel.innerHTML="";
-        players.forEach(p=>{
-            let opt=document.createElement("option"); opt.value=p; opt.text=p; sel.appendChild(opt);
-        });
+  ["vote1","vote2","vote3"].forEach(id=>{
+    const sel=document.getElementById(id); sel.innerHTML="";
+    players.forEach(p=>{
+      const opt=document.createElement("option");
+      opt.value=p; opt.text=p; sel.appendChild(opt);
     });
+  });
+
+  attachMyVoteListener(); // show existing vote state if any
 }
-document.getElementById('submit-votes').addEventListener('click',()=>{
+
+function attachMyVoteListener(){
+  detachMyVote();
+  const st = window.__appState || {};
+  const matchNum = Number(st.currentMatch || 0);
+  const u = auth.currentUser;
+  if (!u || !matchNum) return;
+
+  const voteRef = db.collection('matches').doc(String(matchNum)).collection('votes').doc(u.uid);
+  myVoteUnsub = voteRef.onSnapshot((doc)=>{
+    const btn = document.getElementById('submit-votes');
+    if (!btn) return;
+
+    if (!doc.exists) {
+      btn.disabled = false;
+      btn.textContent = 'Submit Votes';
+      return;
+    }
+
+    // pre-fill UI (optional)
+    const v = doc.data() || {};
+    // We only store names; if they still exist in players[], we can pre-select.
+    if (v.first && players.includes(v.first))  document.getElementById('vote1').value = v.first;
+    if (v.second && players.includes(v.second))document.getElementById('vote2').value = v.second;
+    if (v.third && players.includes(v.third))  document.getElementById('vote3').value = v.third;
+
+    // Allow overwriting until match ends (simple UX)
+    btn.disabled = false;
+    btn.textContent = 'Update Votes';
+  }, (err)=>{
+    alert('Vote listener error: ' + (err && err.message ? err.message : String(err)));
+  });
+}
+
+document.getElementById('submit-votes').addEventListener('click', async ()=>{
+  try {
     const st = window.__appState || {};
-if(!st.matchActive){ alert("Match not started yet."); return; }
-    if(users[currentUser].voted){ alert("Already voted."); return; }
-    let first=document.getElementById('vote1').value;
-    let second=document.getElementById('vote2').value;
-    let third=document.getElementById('vote3').value;
-    if(new Set([first,second,third]).size<3){ alert("Cannot vote same player multiple times."); return; }
-    users[currentUser].votesThisMatch={"1st":first,"2nd":second,"3rd":third};
-    users[currentUser].voted=true;
-    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-    alert("Votes submitted!");
-    updateLeaderboards();
+    if (!st.matchActive) { alert("Match not started yet."); return; }
+
+    const u = auth.currentUser;
+    if (!u) { alert("Not signed in."); return; }
+
+    const first  = document.getElementById('vote1').value;
+    const second = document.getElementById('vote2').value;
+    const third  = document.getElementById('vote3').value;
+
+    if (new Set([first,second,third]).size < 3) {
+      alert("Cannot vote the same player multiple times.");
+      return;
+    }
+
+    const matchNum = Number(st.currentMatch || 0);
+    if (!matchNum) { alert('No active match id.'); return; }
+
+    await db.collection('matches').doc(String(matchNum)).collection('votes').doc(u.uid).set({
+      uid: u.uid,
+      username: currentUser || '',
+      first, second, third,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    alert('Votes saved!');
+  } catch (e) {
+    alert('Submit votes failed: ' + (e && e.message ? e.message : e));
+  }
 });
 
 // ------------------ BETTING ------------------
