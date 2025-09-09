@@ -904,6 +904,10 @@ document.getElementById('end-match').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
   try {
     await stateRef.update({ matchActive: false });
+
+    // 🔴 NEW: clean up the Firestore admin bets listener
+    if (adminBetsUnsub) { adminBetsUnsub(); adminBetsUnsub = null; }
+
     // keep your local MVP tally for now
     let matchResult={match:currentMatch, results:[]};
     Object.keys(users).forEach(u=>{
