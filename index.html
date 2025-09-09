@@ -1469,6 +1469,44 @@ document.getElementById('clear-votes').addEventListener('click',()=>{
     localStorage.removeItem('mvpScores'); localStorage.removeItem('mvpHistory'); localStorage.setItem('currentMatch', currentMatch);
     updateLeaderboards(); updateUI(); alert("Votes cleared.");
 });
+// TEMP — one-time cleanup: set roles.admin=false for any non-admin missing it
+document.getElementById('normalize-roles').addEventListener('click', async ()=>{
+  // must be admin in your local model
+  if (!currentUser || !users[currentUser]?.isAdmin) { 
+    alert('Admin only'); 
+    return; 
+  }
+
+  try {
+    const qs = await db.collection('users').get();
+    const batch = db.batch();
+    let touched = 0;
+
+    qs.forEach(doc => {
+      const d = doc.data() || {};
+      const isAdmin = d.roles && d.roles.admin === true;
+
+      // If NOT admin and (roles missing OR roles.admin not boolean), set false
+      if (!isAdmin) {
+        const hasRoles = !!d.roles;
+        const hasBool = hasRoles && (typeof d.roles.admin === 'boolean');
+        if (!hasBool) {
+          batch.set(doc.ref, { roles: { admin: false } }, { merge: true });
+          touched++;
+        }
+      }
+    });
+
+    if (touched > 0) {
+      await batch.commit();
+      alert('Roles normalized on ' + touched + ' user(s).');
+    } else {
+      alert('No changes needed — everyone already has roles.admin.');
+    }
+  } catch (e) {
+    alert('Normalize failed: ' + (e && e.message ? e.message : e));
+  }
+});
 // TEMP: Promote the current user to admin. Remove after use.
 document.getElementById('promote-me').addEventListener('click', async ()=>{
   const u = auth.currentUser;
