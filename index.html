@@ -633,24 +633,100 @@ function updatePotentialPayout(){
     const payoutDisplay=document.getElementById('total-payout');
     payoutDisplay.textContent=total; payoutDisplay.style.color=total>50?'green':'yellow';
 }
-document.getElementById('submit-bets').addEventListener('click',()=>{
+document.getElementById('submit-bets').addEventListener('click', async ()=>{
+  try {
     const st = window.__appState || {};
-if(!st.bettingOpen){ alert("Betting not open."); return; }
-    let container=document.getElementById('props-container'); let acc=users[currentUser];
-    for(let p of container.children){
-        let propName=p.querySelector('span').textContent;
-        let amt=Number(p.querySelector('input').value);
-        let odds=Number(p.querySelector('input').dataset.odds);
-        if(amt>0){
-            if(acc.availableCoins>=amt){
-                acc.availableCoins -= amt;
-                acc.bets.push({match:currentMatch, player:document.getElementById('player-select').value,prop:propName,amount:amt,odds:odds,resolved:false,won:false});
-            }else{ alert("Cannot bet more than available balance"); }
-        }
-    }
-    updateUI(); updatePotentialPayout(); updateHistory(); alert("Bets placed!");
-});
+    if (!st.bettingOpen) { alert('Betting not open.'); return; }
 
+    const u = auth.currentUser;
+    if (!u) { alert('Not signed in.'); return; }
+
+    const username = currentUser;
+    const userDocRef = db.collection('users').doc(u.uid);
+
+    // Collect bet inputs from the UI
+    const container = document.getElementById('props-container');
+    const player = document.getElementById('player-select').value;
+
+    // Build an array of {propName, odds, amount} from the inputs
+    const entries = [];
+    for (let node of container.children) {
+      const label = node.querySelector('span')?.textContent || '';
+      const input = node.querySelector('input');
+      if (!input) continue;
+      const amt = Number(input.value || 0);
+      const odds = Number(input.dataset.odds || 0);
+      if (amt > 0 && odds > 0) {
+        entries.push({
+          propName: label.split(' (')[0], // "Score (4x)" -> "Score"
+          odds,
+          amount: amt
+        });
+      }
+    }
+
+    if (entries.length === 0) {
+      alert('Enter at least one bet amount.');
+      return;
+    }
+
+    // Sum up total to deduct
+    const totalStake = entries.reduce((s, e) => s + e.amount, 0);
+
+    // Do everything atomically
+    await db.runTransaction(async (tx) => {
+      // 1) Check app state
+      const stateSnap = await tx.get(stateRef);
+      if (!stateSnap.exists) throw new Error('App state missing.');
+      const state = stateSnap.data() || {};
+      const currentMatch = Number(state.currentMatch || 0);
+      if (!state.bettingOpen) throw new Error('Betting is not open.');
+
+      // 2) Check user funds
+      const userSnap = await tx.get(userDocRef);
+      if (!userSnap.exists) throw new Error('User profile missing.');
+      const d = userSnap.data() || {};
+      const avail = Number(d.availableCoins || 0);
+      if (totalStake > avail) throw new Error('Insufficient available coins.');
+
+      // 3) Create bet docs under the current match
+      const betsCol = db.collection('matches').doc(String(currentMatch)).collection('bets');
+      const now = firebase.firestore.FieldValue.serverTimestamp();
+
+      entries.forEach((e) => {
+        const betRef = betsCol.doc(); // auto id
+        tx.set(betRef, {
+          uid: u.uid,
+          username: username,
+          match: currentMatch,
+          player: player,
+          prop: e.propName,
+          odds: e.odds,
+          amount: e.amount,
+          resolved: false,
+          won: false,
+          createdAt: now
+        });
+      });
+
+      // 4) Deduct availableCoins
+      tx.update(userDocRef, {
+        availableCoins: avail - totalStake
+      });
+    });
+
+    // Clear inputs + refresh UI
+    for (let node of document.getElementById('props-container').children) {
+      const input = node.querySelector('input');
+      if (input) input.value = '';
+    }
+    updatePotentialPayout();
+    alert('Bets placed!');
+
+  } catch (err) {
+    alert('Place bets failed: ' + (err && err.message ? err.message : String(err)));
+  }
+});
 // ------------------ ADMIN BET CONTROL ------------------
 document.getElementById('open-bets').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
