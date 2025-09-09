@@ -664,18 +664,29 @@ function renderMyBets(bets){
 }
 // ------------------ TAB NAV ------------------
 document.querySelectorAll('.tab').forEach(tab=>{
-    tab.addEventListener('click',()=>{
-        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-        tab.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
-        document.getElementById(tab.dataset.tab+'-tab').style.display='block';
-        updateUI(); 
-        if(tab.dataset.tab==="history") updateHistory();
-        if(tab.dataset.tab==="admin" && currentUser && users[currentUser].isAdmin) {
-            renderPropsList();
-            reviewBetsForAdminFS(); // 🔴 NEW LINE
-        }
-    });
+  tab.addEventListener('click',()=>{
+    // switch active tab
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    // switch visible content
+    document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
+    document.getElementById(tab.dataset.tab+'-tab').style.display='block';
+
+    updateUI();
+
+    if (tab.dataset.tab === "history") {
+      // keep your old local history for now (we’ll remove later)
+      updateHistory();
+      // 🔴 NEW: Firestore leaderboard + full history
+      renderCoinLeaderboardFS();
+      renderFullHistoryFS();
+    }
+
+    if (tab.dataset.tab === "admin" && currentUser && users[currentUser].isAdmin) {
+      renderPropsList();
+      reviewBetsForAdminFS();
+    }
+  });
 });
 
 // ------------------ ACCOUNT DISPLAY ------------------
