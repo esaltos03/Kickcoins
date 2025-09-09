@@ -695,9 +695,24 @@ document.getElementById('open-bets').addEventListener('click', async ()=>{
   // We will handle coins later when we move coins to Firestore.
 document.getElementById('close-bets').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
+
   try {
-    await stateRef.update({ bettingOpen: false });
-    alert('Betting closed.');
+    // 1) flip state
+    await stateRef.set({ bettingOpen: false }, { merge: true });
+
+    // 2) zero availableCoins for all non-admins
+    const usersSnap = await db.collection('users').get();
+    const batch = db.batch();
+    usersSnap.forEach(doc => {
+      const d = doc.data() || {};
+      const isAdmin = d.roles && d.roles.admin === true;
+      if (isAdmin) return;
+
+      batch.set(doc.ref, { availableCoins: 0 }, { merge: true });
+    });
+    await batch.commit();
+
+    alert('Betting closed and available balances zeroed.');
   } catch (e) {
     alert('Close betting failed: ' + (e && e.message ? e.message : e));
   }
