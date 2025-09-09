@@ -338,7 +338,6 @@ if(!localStorage.getItem('kickcoinsUsers')){
 
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Estress","Alan","Byron"];
 let propEntities = localStorage.getItem('propEntities') ? JSON.parse(localStorage.getItem('propEntities')) : [...players];
-let mvpScores = localStorage.getItem('mvpScores') ? JSON.parse(localStorage.getItem('mvpScores')) : {};
 players.forEach(p=>{ if(!mvpScores[p]) mvpScores[p]=0; });
 
 let propsTemplate = localStorage.getItem('propsTemplate') ? JSON.parse(localStorage.getItem('propsTemplate')) : {};
@@ -347,7 +346,6 @@ propEntities.forEach(p=>{
 });
 localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
 
-let mvpHistory = localStorage.getItem('mvpHistory') ? JSON.parse(localStorage.getItem('mvpHistory')) : [];
 let currentMatch = localStorage.getItem('currentMatch') ? parseInt(localStorage.getItem('currentMatch')) : 0;
 let adminBetsUnsub = null; // live listener for unresolved bets (Firestore)
 
