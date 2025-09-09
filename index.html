@@ -349,6 +349,7 @@ localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
 
 let mvpHistory = localStorage.getItem('mvpHistory') ? JSON.parse(localStorage.getItem('mvpHistory')) : [];
 let currentMatch = localStorage.getItem('currentMatch') ? parseInt(localStorage.getItem('currentMatch')) : 0;
+let adminBetsUnsub = null; // live listener for unresolved bets (Firestore)
 
 let currentUser=null;
 let myBetsUnsub = null; // live listener for "My Bets" (Firestore)
