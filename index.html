@@ -792,7 +792,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
       loadFullBetHistoryFS();     // <<-- this replaces your old renderFullHistoryFS()
     }
 
-    if (tab.dataset.tab === "admin" && currentUser && users[currentUser].isAdmin) {
+    if (tab.dataset.tab === "admin" && currentUser && isAdmin()) {
       renderPropsList();
       reviewBetsForAdminFS();
     }
