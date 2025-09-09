@@ -801,6 +801,10 @@ document.querySelectorAll('.tab').forEach(tab=>{
       renderPropsList();
       reviewBetsForAdminFS();
     }
+    // inside tab click handler:
+if (tab.dataset.tab === "vote") {
+  populateVoting(); // ensures listener attaches / UI fills
+}
   });
 });
 
