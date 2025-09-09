@@ -1297,17 +1297,77 @@ function resolveBet(username, bet, won){
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
 }
 
-// ------------------ LEADERBOARDS ------------------
-function updateLeaderboards(){
-  // MVP leaderboard (still local for now; we’ll migrate MVP next)
-  const tbody = document.getElementById('mvp-leaderboard').querySelector('tbody');
-  tbody.innerHTML="";
-  Object.entries(mvpScores).sort((a,b)=>b[1]-a[1]).forEach((entry,i)=>{
-    const tr=document.createElement("tr");
-    const icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':i<7?'🪨':'🍆';
-    tr.innerHTML=`<td>${i+1} ${icon}</td><td>${entry[0]}</td><td>${entry[1]}</td>`;
+// ------------------ LEADERBOARDS (MVP via Firestore) ------------------
+async function updateLeaderboards(){
+  // MVP leaderboard totals
+  try {
+    const tbody = document.getElementById('mvp-leaderboard').querySelector('tbody');
+    tbody.innerHTML = '';
+    const snap = await db.collection('mvpScores').orderBy('points','desc').get();
+    let rank = 1;
+    snap.forEach(doc=>{
+      const d = doc.data() || {};
+      const name = doc.id; // we use player name as doc id
+      const pts  = typeof d.points === 'number' ? d.points : 0;
+      const icon = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank<7?'🪨':'🍆';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${rank} ${icon}</td><td>${name}</td><td>${pts}</td>`;
+      tbody.appendChild(tr);
+      rank++;
+    });
+  } catch (e) {
+    const tbody = document.getElementById('mvp-leaderboard').querySelector('tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="3" style="color:red;">MVP leaderboard failed: ${e && e.message ? e.message : e}</td>`;
     tbody.appendChild(tr);
-  });
+  }
+
+  // MVP history per match
+  try {
+    const wrap = document.getElementById('mvp-history');
+    wrap.innerHTML = '';
+
+    // Grab latest ~20 match results (you can tweak)
+    // We don’t have an index field besides matchId; we’ll read a handful by id if needed.
+    // Simpler: read all mvpResult docs (small scale).
+    const qs = await db.collectionGroup('mvpResult').get();
+
+    // Group by match, sort desc by numeric match
+    const results = [];
+    qs.forEach(doc=>{
+      const path = doc.ref.parent.parent; // .../matches/{matchId}
+      const matchNum = path ? Number(path.id) : 0;
+      results.push({ match: matchNum, ...doc.data() });
+    });
+    results.sort((a,b)=>b.match - a.match);
+
+    results.forEach(r=>{
+      const div = document.createElement('div');
+      div.className = 'mvp-card';
+      div.innerHTML = `<strong>Match ${r.match}</strong>`;
+
+      (r.results || []).forEach(item=>{
+        // item: { player, points, place }
+        const emoji = item.points===5?'🥇':item.points===3?'🥈':item.points===2?'🥉':(item.points>=1 && item.points<=7?'🪨':'🍆');
+        const line = document.createElement('div');
+        line.className = 'result';
+        line.textContent = `${emoji} ${item.place}: ${item.player} (+${item.points})`;
+        div.appendChild(line);
+      });
+
+      wrap.appendChild(div);
+    });
+
+  } catch (e) {
+    const wrap = document.getElementById('mvp-history');
+    const err = document.createElement('div');
+    err.style.color = 'red';
+    err.textContent = 'MVP history load failed: ' + (e && e.message ? e.message : e);
+    wrap.appendChild(err);
+  }
+
+  // NOTE: coin leaderboard is handled elsewhere (renderCoinLeaderboardFS)
+}
 
   // MVP history (still local for now)
   const mh=document.getElementById('mvp-history');
