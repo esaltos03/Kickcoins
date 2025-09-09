@@ -801,21 +801,28 @@ document.querySelectorAll('.tab').forEach(tab=>{
 
 // ------------------ ACCOUNT DISPLAY ------------------
 function updateUI(){
-    if(!currentUser) return;
-    let acc=users[currentUser];
-    document.getElementById('account-info').innerHTML=`${currentUser} | Total: ${acc.totalCoins} 💰 | Available: ${acc.availableCoins} 💸`;
-    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-    // Admin tab visibility
-    const adminTab = document.querySelector('.tab[data-tab="admin"]');
-    const adminContent = document.getElementById('admin-tab');
-    if(users[currentUser].isAdmin){
-        adminTab.style.display = "block";
-    }else{
-        adminTab.style.display = "none"; adminContent.style.display = "none";
-        if(document.querySelector(".tab.active").dataset.tab === "admin"){
-            document.querySelector('.tab[data-tab="vote"]').click();
-        }
+  // account header
+  const accEl = document.getElementById('account-info');
+  if (accEl) {
+    const name = currentUser || '(signed out)';
+    accEl.innerHTML = `${name} | Total: ${__me.coins} 💰 | Available: ${__me.availableCoins} 💸`;
+  }
+
+  // Admin tab visibility based on Firestore role (not local mirror)
+  const adminTab = document.querySelector('.tab[data-tab="admin"]');
+  const adminContent = document.getElementById('admin-tab');
+  if (adminTab && adminContent) {
+    if (isAdmin()) {
+      adminTab.style.display = "block";
+    } else {
+      adminTab.style.display = "none";
+      adminContent.style.display = "none";
+      const active = document.querySelector(".tab.active");
+      if (active && active.dataset.tab === "admin") {
+        document.querySelector('.tab[data-tab="vote"]').click();
+      }
     }
+  }
 }
 
 // ------------------ MVP VOTING ------------------
