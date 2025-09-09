@@ -639,8 +639,12 @@ document.querySelectorAll('.tab').forEach(tab=>{
         tab.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(tc=>tc.style.display='none');
         document.getElementById(tab.dataset.tab+'-tab').style.display='block';
-        updateUI(); if(tab.dataset.tab==="history") updateHistory();
-        if(tab.dataset.tab==="admin" && currentUser && users[currentUser].isAdmin) renderPropsList();
+        updateUI(); 
+        if(tab.dataset.tab==="history") updateHistory();
+        if(tab.dataset.tab==="admin" && currentUser && users[currentUser].isAdmin) {
+            renderPropsList();
+            reviewBetsForAdminFS(); // 🔴 NEW LINE
+        }
     });
 });
 
