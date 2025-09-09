@@ -311,37 +311,6 @@ const firebaseConfig = {
 
 // Initialize Firebase (exactly once)
 firebase.initializeApp(firebaseConfig);
-async function renderCoinLeaderboardFS(){
-  const tbody = document.querySelector('#coin-leaderboard tbody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-
-  try {
-    // Non-admin users, ordered by coins desc
-    const snap = await db.collection('users')
-      .where('roles.admin', '==', false)
-      .orderBy('coins', 'desc')
-      .get();
-
-    let rank = 1;
-    snap.forEach(doc => {
-      const d = doc.data() || {};
-      const name = d.username || '(user)';
-      const coins = typeof d.coins === 'number' ? d.coins : 0;
-
-      const icon = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank<7?'🪨':'🍆';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${rank} ${icon}</td><td>${name}</td><td>${coins}</td><td></td>`;
-      tbody.appendChild(tr);
-      rank++;
-    });
-  } catch (e) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="4" style="color:red;">Leaderboard load failed: ${e && e.message ? e.message : e}</td>`;
-    tbody.appendChild(tr);
-  }
-}
-
 // Initialize services AFTER app init
 const auth = firebase.auth();
 const db   = firebase.firestore();
