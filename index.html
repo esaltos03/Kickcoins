@@ -351,6 +351,7 @@ let mvpHistory = localStorage.getItem('mvpHistory') ? JSON.parse(localStorage.ge
 let currentMatch = localStorage.getItem('currentMatch') ? parseInt(localStorage.getItem('currentMatch')) : 0;
 
 let currentUser=null;
+let myBetsUnsub = null; // live listener for "My Bets" (Firestore)
 
 // ------------------ LOGIN ------------------
 // ------------------ FIREBASE LOGIN / CREATE / LOGOUT ------------------
