@@ -697,24 +697,33 @@ document.getElementById('close-bets').addEventListener('click', async ()=>{
   if (!currentUser || !users[currentUser]?.isAdmin) return;
 
   try {
-    // 1) flip state
+    // 1) Flip app state
     await stateRef.set({ bettingOpen: false }, { merge: true });
 
-    // 2) zero availableCoins for all non-admins
+    // 2) Zero availableCoins for all non-admins (only if needed) and count how many were changed
     const usersSnap = await db.collection('users').get();
     const batch = db.batch();
+    let touched = 0;
+
     usersSnap.forEach(doc => {
       const d = doc.data() || {};
       const isAdmin = d.roles && d.roles.admin === true;
       if (isAdmin) return;
 
-      batch.set(doc.ref, { availableCoins: 0 }, { merge: true });
+      const currentAvail = typeof d.availableCoins === 'number' ? d.availableCoins : 0;
+      if (currentAvail !== 0) {
+        batch.set(doc.ref, { availableCoins: 0 }, { merge: true });
+        touched++;
+      }
     });
-    await batch.commit();
 
-    alert('Betting closed and available balances zeroed.');
+    if (touched > 0) {
+      await batch.commit();
+    }
+
+    alert('Betting closed. Zeroed availableCoins for ' + touched + ' user(s).');
   } catch (e) {
-    alert('Close betting failed: ' + (e && e.message ? e.message : e));
+    alert('Close betting failed: ' + (e && e.code ? e.code + ' - ' : '') + (e && e.message ? e.message : e));
   }
 });
 document.getElementById('start-match').addEventListener('click', async ()=>{
