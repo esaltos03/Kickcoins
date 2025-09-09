@@ -362,7 +362,11 @@ let myBetsUnsub = null; // live listener for "My Bets" (Firestore)
 
 // ------------------ LOGIN ------------------
 // ------------------ FIREBASE LOGIN / CREATE / LOGOUT ------------------
-
+function renderBalanceFromFS(){
+  const el = document.getElementById('balance-display');
+  if (!el) return;
+  el.textContent = `Total: ${__me.coins} 💰 | Available: ${__me.availableCoins} 💸`;
+}
 // Toggle login vs app UI
 function showLogin(show=true){
     document.getElementById('login-card').style.display = show ? 'block' : 'none';
