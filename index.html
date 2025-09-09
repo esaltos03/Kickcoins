@@ -338,6 +338,8 @@ if(!localStorage.getItem('kickcoinsUsers')){
 
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Esdras","Alan","Byron","Josh"];
 let propEntities = localStorage.getItem('propEntities') ? JSON.parse(localStorage.getItem('propEntities')) : [...players];
+let mvpScores = {};
+let mvpHistory = [];
 players.forEach(p=>{ if(!mvpScores[p]) mvpScores[p]=0; });
 
 let propsTemplate = localStorage.getItem('propsTemplate') ? JSON.parse(localStorage.getItem('propsTemplate')) : {};
