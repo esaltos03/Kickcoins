@@ -486,6 +486,21 @@ auth.onAuthStateChanged(async (user) => {
     }
     users[username].isAdmin = (adminVal === true);
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+      // === LIVE BALANCE LISTENER FOR SIGNED-IN USER ===
+if (window.__userUnsub) { try { window.__userUnsub(); } catch(_){} }
+window.__userUnsub = db.collection('users').doc(user.uid).onSnapshot((doc) => {
+  const d = doc.exists ? doc.data() : {};
+  // fallbacks so we don't crash on undefined
+  const totalCoins = typeof d.coins === 'number' ? d.coins : 100;
+  const available = typeof d.availableCoins === 'number' ? d.availableCoins : 0;
+
+  // keep the local mirror just for rendering that header/UI
+  if (!users[username]) users[username] = {};
+  users[username].totalCoins = totalCoins;
+  users[username].availableCoins = available;
+  localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+  updateUI();
+});
   } catch (e) {
     alert('AUTH DIAG error: ' + (e && e.message ? e.message : String(e)));
   }
