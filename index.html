@@ -906,8 +906,8 @@ document.querySelectorAll('.tab').forEach(tab=>{
       // keep your old local history for now (we’ll remove later)
       updateHistory();
       // 🔴 NEW: Firestore leaderboard + full history
-      renderCoinLeaderboardFS();
-      renderFullHistoryFS();
+      renderCoinLeaderboardFS(); 
+      loadFullBetHistoryFS();     // <<-- this replaces your old renderFullHistoryFS()
     }
 
     if (tab.dataset.tab === "admin" && currentUser && users[currentUser].isAdmin) {
