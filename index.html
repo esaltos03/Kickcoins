@@ -327,6 +327,67 @@ setTimeout(()=>{
 });
 var users = {};
 
+// === FIRESTORE-BACKED PLAYERS & PROPS ===
+let propEntities = [];         // live list of players from Firestore
+let propsTemplate = {};        // map: player -> [{name, odds}, ...]
+let playersUnsub = null;
+let propsUnsubs = {};          // per-player listeners
+
+function attachPlayersListener() {
+  if (playersUnsub) { playersUnsub(); playersUnsub = null; }
+
+  playersUnsub = db.collection('config').doc('players').onSnapshot(
+    (doc) => {
+      const d = doc.data() || {};
+      const newList = Array.isArray(d.list) ? d.list : [];
+
+      // detach listeners for players that were removed
+      Object.keys(propsUnsubs).forEach(p => {
+        if (!newList.includes(p)) {
+          try { propsUnsubs[p] && propsUnsubs[p](); } catch(_) {}
+          delete propsUnsubs[p];
+          delete propsTemplate[p];
+        }
+      });
+
+      // attach listeners for any new players
+      newList.forEach(p => { if (!propsUnsubs[p]) attachPropsListener(p); });
+
+      propEntities = newList;
+
+      // refresh UIs
+      populatePlayers();   // betting dropdown
+      populateVoting();    // MVP dropdowns
+      populatePropAdmin(); // admin UI
+    },
+    (err) => alert('Players listener error: ' + (err && err.message ? err.message : err))
+  );
+}
+
+function attachPropsListener(player) {
+  if (propsUnsubs[player]) { try { propsUnsubs[player](); } catch(_) {} propsUnsubs[player] = null; }
+
+  const ref = db.collection('config')
+                .doc('propsTemplate')
+                .collection('byPlayer')
+                .doc(player);
+
+  propsUnsubs[player] = ref.onSnapshot(
+    (doc) => {
+      const d = doc.data() || {};
+      propsTemplate[player] = Array.isArray(d.items) ? d.items : [];
+
+      // refresh if this player is currently in view
+      if (document.getElementById('player-select')?.value === player) {
+        populateProps();
+      }
+      if (document.getElementById('prop-player')?.value === player) {
+        renderPropsList();
+      }
+    },
+    (err) => alert('Props listener error (' + player + '): ' + (err && err.message ? err.message : err))
+  );
+}
 let currentMatch = 0; // ✅ keep a local var; Firestore listener keeps it in sync
 let adminBetsUnsub = null; // live listener for unresolved bets (Firestore)
 // === MVP (Firestore-driven) ===
