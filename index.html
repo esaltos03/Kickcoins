@@ -1586,38 +1586,43 @@ function populatePropAdmin(){
   });
 }
 function renderPropsList(){
-    const container = document.getElementById('props-list');
-    container.innerHTML = "";
-    const player = document.getElementById('prop-player').value;
-    if(!propsTemplate[player]) propsTemplate[player]=[];
+  const container = document.getElementById('props-list');
+  if (!container) return;
+  container.innerHTML = "";
 
-    propsTemplate[player].forEach((p, i)=>{
-        const div = document.createElement('div');
-        div.textContent = `${p.name} (${p.odds}x) `;
-        div.style.margin = "4px";
+  const player = document.getElementById('prop-player').value;
+  const items = (propsTemplate[player] || []);
 
-        const btn = document.createElement('button');
-        btn.textContent = "Remove";
-        btn.style.marginLeft="10px";
-        btn.onclick = async ()=>{
-  if (!isAdmin()) return;
-  if (!confirm(`Remove prop "${p.name}" from ${player}?`)) return;
+  items.forEach((p)=>{
+    const div = document.createElement('div');
+    div.style.margin = "6px 0";
+    div.textContent = `${p.name} (${p.odds}x) `;
 
-  try {
-    // remove the exact object { name: p.name, odds: p.odds }
-    await db.collection('config')
-      .doc('propsTemplate')
-      .collection('byPlayer')
-      .doc(player)
-      .set({
-        items: firebase.firestore.FieldValue.arrayRemove({ name: p.name, odds: p.odds })
-      }, { merge: true });
+    const btn = document.createElement('button');
+    btn.textContent = "Remove";
+    btn.style.marginLeft = "10px";
+    btn.onclick = async ()=>{
+      if (!isAdmin()) return;
+      if (!confirm(`Remove prop "${p.name}" from ${player}?`)) return;
 
-    // UI updates via props listener
-  } catch (e) {
-    alert('Remove prop failed: ' + (e && e.message ? e.message : e));
-  }
-};
+      try {
+        await db.collection('config')
+          .doc('propsTemplate')
+          .collection('byPlayer')
+          .doc(player)
+          .set({
+            items: firebase.firestore.FieldValue.arrayRemove({ name: p.name, odds: p.odds })
+          }, { merge: true });
+        // UI auto-updates via props listener
+      } catch (e) {
+        alert('Remove prop failed: ' + (e?.message || e));
+      }
+    };
+
+    div.appendChild(btn);
+    container.appendChild(div);
+  });
+}
 
 // Add new prop
 document.getElementById('add-prop').addEventListener('click', async ()=>{
