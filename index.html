@@ -1634,7 +1634,7 @@ document.getElementById('clear-votes').addEventListener('click',()=>{
 // TEMP — one-time cleanup: set roles.admin=false for any non-admin missing it
 document.getElementById('normalize-roles').addEventListener('click', async ()=>{
   // must be admin in your local model
-  if (!currentUser || !users[currentUser]?.isAdmin) { 
+  if (!currentUser || !isAdmin()) {
     alert('Admin only'); 
     return; 
   }
