@@ -2058,63 +2058,74 @@ document.getElementById('set-match-num').addEventListener('click', async ()=>{
   }
 });
 document.getElementById('season-reset').addEventListener('click', async ()=>{
-  if (!isAdmin()) { alert("Admin only."); return; }
-  if (!confirm("⚠️ This will wipe MVP totals and all matches/bets/votes, and reset player coins. Continue?")) return;
-  if (!confirm("Last chance—are you absolutely sure?")) return;
+  if (!isAdmin()) { alert('Admin only.'); return; }
+
+  const really = confirm(
+`⚠️ Season Reset
+
+This will:
+• Reset all users' coins (non-admins) to your baseline
+• Clear MVP leaderboard (mvpScores)
+• Delete ALL past matches, including bets, votes, and MVP results
+• Reset app state (betting closed, match inactive, currentMatch = 0)
+
+Proceed?`
+  );
+  if (!really) return;
 
   try {
-    // 1) Close state and reset match number
+    // 0) Freeze UI a bit
+    alert('Starting season reset… this can take a moment.');
+
+    // 1) Reset app state
     await db.collection('app').doc('state').set({
       bettingOpen: false,
       matchActive: false,
       currentMatch: 0
     }, { merge: true });
 
-    // 2) Reset all non-admin users' balances
+    // 2) Clear MVP leaderboard (delete all docs in mvpScores)
+    await deleteQueryInBatches(db.collection('mvpScores'), 300, 'mvpScores');
+
+    // 3) Delete ALL match data: bets, votes, mvpResult, and the match docs
+    //    We’ll delete subcollections first via collectionGroup queries,
+    //    then delete the top-level match docs themselves.
+    await deleteQueryInBatches(db.collectionGroup('bets'),       300, 'bets');
+    await deleteQueryInBatches(db.collectionGroup('votes'),      300, 'votes');
+    await deleteQueryInBatches(db.collectionGroup('mvpResult'),  300, 'mvpResult');
+
+    // Now delete the /matches/{id} docs (empty containers after subcollections cleared)
+    await deleteQueryInBatches(db.collection('matches'), 300, 'match docs');
+
+    // 4) Reset user balances (skip admins)
     const usersSnap = await db.collection('users').get();
-    const userBatch = db.batch();
-    usersSnap.forEach(doc=>{
+    const batchSize = 300;
+    let pending = [];
+    let wrote = 0;
+
+    usersSnap.forEach(doc => {
       const d = doc.data() || {};
       const isA = d.roles && d.roles.admin === true;
-      if (isA) return;
-      userBatch.set(doc.ref, {
-        coins: 100,
-        availableCoins: 0,
-        voted: false
-      }, { merge: true });
-    });
-    await userBatch.commit();
 
-    // 3) Wipe MVP totals
-    const scoresSnap = await db.collection('mvpScores').get();
-    const scoresBatch = db.batch();
-    scoresSnap.forEach(doc => scoresBatch.delete(doc.ref));
-    if (!scoresSnap.empty) await scoresBatch.commit();
-
-    // 4) Delete ALL matches and their subcollections (bets, votes, mvpResult)
-    const matchesSnap = await db.collection('matches').get();
-    for (const matchDoc of matchesSnap.docs) {
-      const id = matchDoc.id;
-
-      // helper to delete every doc in a subcollection if it exists
-      async function nukeSub(path){
-        const snap = await db.collection('matches').doc(id).collection(path).get();
-        if (snap.empty) return;
-        const b = db.batch();
-        snap.forEach(d => b.delete(d.ref));
-        await b.commit();
+      if (!isA) {
+        // Set your desired baseline here:
+        pending.push({ ref: doc.ref, data: { coins: 100, availableCoins: 0 } });
       }
-      await nukeSub('bets');
-      await nukeSub('votes');
-      await nukeSub('mvpResult');
+    });
 
-      // finally delete the match doc itself
-      await matchDoc.ref.delete();
+    while (pending.length) {
+      const chunk = pending.splice(0, batchSize);
+      const b = db.batch();
+      chunk.forEach(item => b.set(item.ref, item.data, { merge: true }));
+      await b.commit();
+      wrote += chunk.length;
+      await new Promise(r => setTimeout(r, 30));
     }
+    console.log(`Reset balances for ${wrote} player(s).`);
 
-    alert("Season reset complete: state closed, users reset, MVP cleared, matches wiped.");
+    alert('✅ Season reset complete.\n\nCoins reset, MVP leaderboard cleared, and all match/bet/vote history removed.');
   } catch (e) {
-    alert("Season reset failed: " + (e?.message || e));
+    alert('Season reset failed: ' + (e && e.message ? e.message : e));
   }
 });
 </script>
