@@ -327,12 +327,16 @@ setTimeout(()=>{
 });
 var users = {};
 
-// === FIRESTORE-BACKED PLAYERS & PROPS ===
-let propEntities = [];         // live list of players from Firestore
-let propsTemplate = {};        // map: player -> [{name, odds}, ...]
+// === FIRESTORE ROSTERS ===
+// Betting roster (was your old "players" doc)
+let propEntities = [];
+let propsTemplate = {};
 let playersUnsub = null;
-let propsUnsubs = {};          // per-player listeners
+let propsUnsubs = {};
 
+// MVP roster (separate doc so MVP voting list is independent)
+let mvpEntities = [];
+let mvpPlayersUnsub = null;
 function attachPlayersListener() {
   if (playersUnsub) { playersUnsub(); playersUnsub = null; }
 
