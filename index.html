@@ -2057,6 +2057,66 @@ document.getElementById('set-match-num').addEventListener('click', async ()=>{
     alert('Failed to set match #: ' + (e?.message || e));
   }
 });
+document.getElementById('season-reset').addEventListener('click', async ()=>{
+  if (!isAdmin()) { alert("Admin only."); return; }
+  if (!confirm("⚠️ This will wipe MVP totals and all matches/bets/votes, and reset player coins. Continue?")) return;
+  if (!confirm("Last chance—are you absolutely sure?")) return;
+
+  try {
+    // 1) Close state and reset match number
+    await db.collection('app').doc('state').set({
+      bettingOpen: false,
+      matchActive: false,
+      currentMatch: 0
+    }, { merge: true });
+
+    // 2) Reset all non-admin users' balances
+    const usersSnap = await db.collection('users').get();
+    const userBatch = db.batch();
+    usersSnap.forEach(doc=>{
+      const d = doc.data() || {};
+      const isA = d.roles && d.roles.admin === true;
+      if (isA) return;
+      userBatch.set(doc.ref, {
+        coins: 100,
+        availableCoins: 0,
+        voted: false
+      }, { merge: true });
+    });
+    await userBatch.commit();
+
+    // 3) Wipe MVP totals
+    const scoresSnap = await db.collection('mvpScores').get();
+    const scoresBatch = db.batch();
+    scoresSnap.forEach(doc => scoresBatch.delete(doc.ref));
+    if (!scoresSnap.empty) await scoresBatch.commit();
+
+    // 4) Delete ALL matches and their subcollections (bets, votes, mvpResult)
+    const matchesSnap = await db.collection('matches').get();
+    for (const matchDoc of matchesSnap.docs) {
+      const id = matchDoc.id;
+
+      // helper to delete every doc in a subcollection if it exists
+      async function nukeSub(path){
+        const snap = await db.collection('matches').doc(id).collection(path).get();
+        if (snap.empty) return;
+        const b = db.batch();
+        snap.forEach(d => b.delete(d.ref));
+        await b.commit();
+      }
+      await nukeSub('bets');
+      await nukeSub('votes');
+      await nukeSub('mvpResult');
+
+      // finally delete the match doc itself
+      await matchDoc.ref.delete();
+    }
+
+    alert("Season reset complete: state closed, users reset, MVP cleared, matches wiped.");
+  } catch (e) {
+    alert("Season reset failed: " + (e?.message || e));
+  }
+});
 </script>
 </body>
 </html>
