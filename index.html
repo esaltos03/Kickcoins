@@ -590,6 +590,26 @@ async function ensureState() {
   }
 }
 ensureState();
+// Ensure the config docs exist so listeners have something to read
+async function ensureConfigDocs() {
+  const cfg = db.collection('config');
+
+  const playersDoc = await cfg.doc('players').get();
+  if (!playersDoc.exists) {
+    await cfg.doc('players').set({ list: [] }); // betting roster
+  }
+
+  const mvpPlayersDoc = await cfg.doc('mvpPlayers').get();
+  if (!mvpPlayersDoc.exists) {
+    await cfg.doc('mvpPlayers').set({ list: [] }); // MVP roster (separate)
+  }
+
+  const propsRoot = await cfg.doc('propsTemplate').get();
+  if (!propsRoot.exists) {
+    await cfg.doc('propsTemplate').set({}); // container for byPlayer
+  }
+}
+ensureConfigDocs();
 
 // Real-time listener to reflect buttons & keep local mirror in sync
 stateRef.onSnapshot((snap) => {
