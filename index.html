@@ -571,12 +571,13 @@ auth.onAuthStateChanged(async (user) => {
   });
 
   // proceed
-  showLogin(false);
-  populateVoting();
-  populatePlayers();
-  updateLeaderboards();
-  populatePropAdmin();
-attachPlayersListener();
+ showLogin(false);
+populateVoting();
+populatePlayers();
+updateLeaderboards();
+populatePropAdmin();
+attachPlayersListener();     // betting roster
+attachMvpPlayersListener();  // MVP roster (new)
 });
 // ---------- FIRESTORE APP STATE ----------
 const stateRef = db.collection('app').doc('state');
