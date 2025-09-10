@@ -937,7 +937,20 @@ function updateUI(){
     }
   }
 }
+function refreshAdminButtons(){
+  const st = window.__appState || {};
+  const userIsAdmin = isAdmin();
 
+  const ob = document.getElementById('open-bets');
+  const cb = document.getElementById('close-bets');
+  const sm = document.getElementById('start-match');
+  const em = document.getElementById('end-match');
+
+  if (ob) ob.disabled = !userIsAdmin || !!st.bettingOpen;
+  if (cb) cb.disabled = !userIsAdmin || !st.bettingOpen;
+  if (sm) sm.disabled = !userIsAdmin || !!st.matchActive || !!st.bettingOpen;
+  if (em) em.disabled = !userIsAdmin || !st.matchActive;
+}
 // ------------------ MVP VOTING (Firestore) ------------------
 function populateVoting(){
   // Use the MVP roster only
