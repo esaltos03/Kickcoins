@@ -553,6 +553,7 @@ auth.onAuthStateChanged(async (user) => {
   populatePlayers();
   updateLeaderboards();
   populatePropAdmin();
+attachPlayersListener();
 });
 // ---------- FIRESTORE APP STATE ----------
 const stateRef = db.collection('app').doc('state');
