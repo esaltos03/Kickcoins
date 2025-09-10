@@ -1588,18 +1588,25 @@ function renderPropsList(){
         const btn = document.createElement('button');
         btn.textContent = "Remove";
         btn.style.marginLeft="10px";
-        btn.onclick = ()=>{
-            if(confirm(`Remove prop "${p.name}" from ${player}?`)){
-                propsTemplate[player].splice(i,1);
-                localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
-                renderPropsList();
-                populatePlayers(); // update betting dropdown
-            }
-        };
-        div.appendChild(btn);
-        container.appendChild(div);
-    });
-}
+        btn.onclick = async ()=>{
+  if (!isAdmin()) return;
+  if (!confirm(`Remove prop "${p.name}" from ${player}?`)) return;
+
+  try {
+    // remove the exact object { name: p.name, odds: p.odds }
+    await db.collection('config')
+      .doc('propsTemplate')
+      .collection('byPlayer')
+      .doc(player)
+      .set({
+        items: firebase.firestore.FieldValue.arrayRemove({ name: p.name, odds: p.odds })
+      }, { merge: true });
+
+    // UI updates via props listener
+  } catch (e) {
+    alert('Remove prop failed: ' + (e && e.message ? e.message : e));
+  }
+};
 
 // Add new prop
 document.getElementById('add-prop').addEventListener('click', async ()=>{
