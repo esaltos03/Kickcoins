@@ -1374,19 +1374,6 @@ async function resolveBetGroupFS(matchNum, betGroup, won, cardEl){
   }
 }
 
-function resolveBet(username, bet, won){
-    if(bet.resolved) return; // safety
-    bet.resolved=true;
-    bet.won=won;
-    if(won){
-        let payout = bet.amount * bet.odds + bet.amount;
-        users[username].totalCoins += payout;
-    }
-    updateUI();
-updateLeaderboards();
-localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-}
-
 // ------------------ LEADERBOARDS (MVP via Firestore) ------------------
 async function updateLeaderboards(){
   // MVP leaderboard totals
