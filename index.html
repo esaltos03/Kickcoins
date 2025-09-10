@@ -337,6 +337,19 @@ let propsUnsubs = {};
 // MVP roster (separate doc so MVP voting list is independent)
 let mvpEntities = [];
 let mvpPlayersUnsub = null;
+        function attachMvpPlayersListener() {
+  if (mvpPlayersUnsub) { try { mvpPlayersUnsub(); } catch(_){} mvpPlayersUnsub = null; }
+
+  // MVP roster lives at: /config/mvpPlayers { list: [...] }
+  mvpPlayersUnsub = db.collection('config').doc('mvpPlayers').onSnapshot(
+    (doc) => {
+      const d = doc.data() || {};
+      mvpEntities = Array.isArray(d.list) ? d.list : [];
+      populateVoting(); // refresh MVP dropdowns
+    },
+    (err) => alert('MVP players listener error: ' + (err && err.message ? err.message : err))
+  );
+}
 function attachPlayersListener() {
   if (playersUnsub) { playersUnsub(); playersUnsub = null; }
 
