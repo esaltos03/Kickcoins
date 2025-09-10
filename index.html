@@ -1153,15 +1153,16 @@ document.getElementById('close-bets').addEventListener('click', async ()=>{
     let touched = 0;
 
     usersSnap.forEach(doc => {
-      const d = doc.data() || {};
-      if (!isAdmin()) {
+  const d = doc.data() || {};
+  const isA = d.roles && d.roles.admin === true; // skip admins
+  if (isA) return;
 
-      const currentAvail = typeof d.availableCoins === 'number' ? d.availableCoins : 0;
-      if (currentAvail !== 0) {
-        batch.set(doc.ref, { availableCoins: 0 }, { merge: true });
-        touched++;
-      }
-    });
+  const currentAvail = Number(d.availableCoins || 0);
+  if (currentAvail !== 0) {
+    batch.set(doc.ref, { availableCoins: 0 }, { merge: true });
+    touched++;
+  }
+});
 
     if (touched > 0) {
       await batch.commit();
