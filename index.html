@@ -1010,14 +1010,20 @@ document.getElementById('submit-votes').addEventListener('click', async ()=>{
     const matchNum = Number(st.currentMatch || 0);
     if (!matchNum) { alert('No active match id.'); return; }
 
+    // 🔴 Confirm before finalizing
+    const confirmMsg = `Are you sure you want to cast your votes?\n\n1st: ${first}\n2nd: ${second}\n3rd: ${third}\n\nThis cannot be undone.`;
+    if (!confirm(confirmMsg)) return;
+
+    // 🔒 Save once with locked=true
     await db.collection('matches').doc(String(matchNum)).collection('votes').doc(u.uid).set({
       uid: u.uid,
       username: currentUser || '',
       first, second, third,
+      locked: true,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    alert('Votes saved!');
+    alert('Your vote has been locked for this match!');
   } catch (e) {
     alert('Submit votes failed: ' + (e && e.message ? e.message : e));
   }
