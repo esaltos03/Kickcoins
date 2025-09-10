@@ -1802,6 +1802,20 @@ document.getElementById('seed-config').addEventListener('click', async ()=>{
     alert("Seed config failed: " + (e && e.message ? e.message : e));
   }
 });
+// TEMP: Reset app state so admin buttons unlock easily
+document.getElementById('reset-state').addEventListener('click', async ()=>{
+  if (!isAdmin()) { alert("Admin only."); return; }
+  try {
+    await db.collection('app').doc('state').set({
+      bettingOpen: false,
+      matchActive: false
+      // intentionally NOT changing currentMatch
+    }, { merge: true });
+    alert("App state reset. (bettingOpen=false, matchActive=false)");
+  } catch (e) {
+    alert("Reset state failed: " + (e?.message || e));
+  }
+});
 </script>
 </body>
 </html>
