@@ -880,18 +880,18 @@ function updateUI(){
 // ------------------ MVP VOTING (Firestore) ------------------
 function populateVoting(){
   ["vote1","vote2","vote3"].forEach(id=>{
-    const sel=document.getElementById(id); sel.innerHTML="";
-    players.forEach(p=>{
-      const opt=document.createElement("option");
-      opt.value=p; opt.text=p; sel.appendChild(opt);
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    (propEntities || []).forEach(p=>{
+      const opt = document.createElement("option");
+      opt.value = p;
+      opt.text = p;
+      sel.appendChild(opt);
     });
   });
 
-  attachMyVoteListener(); 
-if (v.first  && propEntities.includes(v.first))  document.getElementById('vote1').value = v.first;
-if (v.second && propEntities.includes(v.second)) document.getElementById('vote2').value = v.second;
-if (v.third  && propEntities.includes(v.third))  document.getElementById('vote3').value = v.third;
-    // show existing vote state if any
+  // Attach / reattach the listener that will also prefill votes if they exist
+  attachMyVoteListener();
 }
 
 function attachMyVoteListener(){
