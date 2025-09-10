@@ -423,7 +423,11 @@ let __me = { coins: 0, availableCoins: 0, roles: { admin: false }, username: "" 
 let __meUnsub = null;
 
 function isSignedIn(){ return !!auth.currentUser; }
-function isAdmin(){ return !!(__me.roles && __me.roles.admin === true); }
+function isAdmin(){
+  const a = __me && __me.roles ? __me.roles.admin : false;
+  // tolerate boolean true, string "true", or number 1
+  return a === true || a === 'true' || a === 1;
+}
 let myBetsUnsub = null; // live listener for "My Bets" (Firestore)
 
 // ------------------ LOGIN ------------------
