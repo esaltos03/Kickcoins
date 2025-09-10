@@ -1821,6 +1821,55 @@ document.getElementById('reset-state').addEventListener('click', async ()=>{
     alert("Reset state failed: " + (e?.message || e));
   }
 });
+// DEBUG: show what the app thinks right now
+document.getElementById('debug-status').addEventListener('click', async ()=>{
+  try {
+    const u = auth.currentUser;
+    const uid = u ? u.uid : '(no user)';
+    // what the live listeners currently have
+    const meCopy = JSON.stringify(__me, null, 2);
+    const appCopy = JSON.stringify(window.__appState || {}, null, 2);
+
+    // fetch fresh from Firestore too (in case listener didn’t attach)
+    let userDocData = null;
+    let stateDocData = null;
+    if (u) {
+      const userSnap = await db.collection('users').doc(uid).get();
+      userDocData = userSnap.exists ? userSnap.data() : null;
+    }
+    const stateSnap = await db.collection('app').doc('state').get();
+    stateDocData = stateSnap.exists ? stateSnap.data() : null;
+
+    // read current button disabled flags
+    const ob = document.getElementById('open-bets');
+    const cb = document.getElementById('close-bets');
+    const sm = document.getElementById('start-match');
+    const em = document.getElementById('end-match');
+
+    const details = [
+      `UID: ${uid}`,
+      `isAdmin(): ${isAdmin()}`,
+      '',
+      `__me (listener):\n${meCopy}`,
+      '',
+      `window.__appState (listener):\n${appCopy}`,
+      '',
+      `users/${uid} (fresh read):\n${JSON.stringify(userDocData, null, 2)}`,
+      '',
+      `app/state (fresh read):\n${JSON.stringify(stateDocData, null, 2)}`,
+      '',
+      `Buttons disabled?`,
+      `  Open Bets:  ${ob ? ob.disabled : '(missing)'}  <- disabled if !admin OR bettingOpen`,
+      `  Close Bets: ${cb ? cb.disabled : '(missing)'}  <- disabled if !admin OR !bettingOpen`,
+      `  Start:      ${sm ? sm.disabled : '(missing)'}  <- disabled if !admin OR matchActive OR bettingOpen`,
+      `  End:        ${em ? em.disabled : '(missing)'}  <- disabled if !admin OR !matchActive`,
+    ].join('\n');
+
+    alert(details);
+  } catch (e) {
+    alert('Debug failed: ' + (e?.message || e));
+  }
+});
 </script>
 </body>
 </html>
