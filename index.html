@@ -1600,7 +1600,7 @@ function renderPropsList(){
 
 // Add new prop
 document.getElementById('add-prop').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin) return;
+    if(!currentUser || !isAdmin()) return;
     let player = document.getElementById('prop-player').value;
     let name = document.getElementById('new-prop').value.trim();
     let odds = parseInt(document.getElementById('new-odds').value);
