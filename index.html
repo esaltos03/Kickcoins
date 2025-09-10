@@ -1602,21 +1602,33 @@ function renderPropsList(){
 }
 
 // Add new prop
-document.getElementById('add-prop').addEventListener('click',()=>{
-    if(!currentUser || !isAdmin()) return;
-    let player = document.getElementById('prop-player').value;
-    let name = document.getElementById('new-prop').value.trim();
-    let odds = parseInt(document.getElementById('new-odds').value);
+document.getElementById('add-prop').addEventListener('click', async ()=>{
+  if (!currentUser || !isAdmin()) return;
 
-    if(name && odds > 0){
-        if(!propsTemplate[player]) propsTemplate[player] = [];
-        propsTemplate[player].push({name, odds});
-        localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
-        document.getElementById('new-prop').value = "";
-        document.getElementById('new-odds').value = "";
-        renderPropsList();
-        populatePlayers(); // update betting dropdown
-    }
+  const player = document.getElementById('prop-player').value;
+  const name = (document.getElementById('new-prop').value || '').trim();
+  const odds = parseInt(document.getElementById('new-odds').value, 10);
+
+  if (!player) { alert('Select a player'); return; }
+  if (!name || !(odds > 0)) { alert('Enter valid prop name and odds'); return; }
+
+  try {
+    // Add new prop object to that player's items array
+    await db.collection('config')
+      .doc('propsTemplate')
+      .collection('byPlayer')
+      .doc(player)
+      .set({
+        items: firebase.firestore.FieldValue.arrayUnion({ name, odds })
+      }, { merge: true });
+
+    document.getElementById('new-prop').value = '';
+    document.getElementById('new-odds').value = '';
+    // UI updates via props listener
+    alert('Prop added.');
+  } catch (e) {
+    alert('Add prop failed: ' + (e && e.message ? e.message : e));
+  }
 });
 
 // ------------------ DELETE USER ------------------
