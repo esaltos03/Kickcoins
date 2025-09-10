@@ -533,7 +533,7 @@ stateRef.onSnapshot((snap) => {
   const sm = document.getElementById('start-match');
   const em = document.getElementById('end-match');
 
-  const userIsAdmin = (currentUser && users[currentUser] && users[currentUser].isAdmin) ? true : false;
+  const userIsAdmin = isAdmin();
 
   if (ob) ob.disabled = !userIsAdmin || !!st.bettingOpen;
   if (cb) cb.disabled = !userIsAdmin || !st.bettingOpen;
