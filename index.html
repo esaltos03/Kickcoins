@@ -947,6 +947,62 @@ function updateUI(){
     const name = currentUser || '(signed out)';
     accEl.innerHTML = `${name} | Total: ${__me.coins} 💰 | Available: ${__me.availableCoins} 💸`;
   }
+// === STATUS BAR RENDERER ===
+// Optional: flip this to false if you don't want alert() popups on state changes.
+const ENABLE_STATUS_ALERTS = false;
+
+function renderStatusBar(st){
+  const bar = document.getElementById('status-bar');
+  if (!bar) return;
+
+  // Clear previous classes
+  bar.className = '';
+
+  // Decide message + style
+  const lines = [];
+  // show current match number when available
+  if (typeof st.currentMatch === 'number' && st.currentMatch > 0) {
+    lines.push(`Match #${st.currentMatch}`);
+  }
+
+  if (st.bettingOpen) {
+    lines.push('🟢 Betting is LIVE — don’t forget to place your bets!');
+    bar.classList.add('open', 'pulse');
+  } else {
+    lines.push('⚪ Betting is closed — check your results!');
+    bar.classList.add('closed');
+  }
+
+  if (st.matchActive) {
+    lines.push('🟢 Match STARTED — MVP voting is OPEN!');
+    // keep pulse if either is live; already added when bettingOpen; add if only matchActive is live
+    if (!bar.classList.contains('pulse')) bar.classList.add('pulse');
+    bar.classList.add('started');
+  } else {
+    lines.push('⚪ Match not active');
+    bar.classList.add('ended'); // gives a subtle different tone when not active
+  }
+
+  bar.textContent = lines.join(' • ');
+  bar.style.display = 'block';
+}
+
+function maybeAnnounceStateChange(prev, st){
+  if (!ENABLE_STATUS_ALERTS) return;
+  // Use simple alerts for big state flips
+  if (prev && prev.bettingOpen === false && st.bettingOpen === true) {
+    alert('Betting is now LIVE — 10 coins have been granted to all players.');
+  }
+  if (prev && prev.bettingOpen === true && st.bettingOpen === false) {
+    alert('Betting is now CLOSED — unused available coins were cleared.');
+  }
+  if (prev && prev.matchActive === false && st.matchActive === true) {
+    alert('The match has STARTED — MVP voting is now OPEN.');
+  }
+  if (prev && prev.matchActive === true && st.matchActive === false) {
+    alert('The match has ENDED — MVP votes will be tallied.');
+  }
+}
 
   // Admin tab visibility based on Firestore role (not local mirror)
   const adminTab = document.querySelector('.tab[data-tab="admin"]');
