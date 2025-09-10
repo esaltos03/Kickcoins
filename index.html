@@ -913,12 +913,10 @@ function attachMyVoteListener(){
     }
 
     // pre-fill UI (optional)
-    const v = doc.data() || {};
-    // We only store names; if they still exist in players[], we can pre-select.
-    if (v.first && players.includes(v.first))  document.getElementById('vote1').value = v.first;
-    if (v.second && players.includes(v.second))document.getElementById('vote2').value = v.second;
-    if (v.third && players.includes(v.third))  document.getElementById('vote3').value = v.third;
-
+const v = doc.data() || {};
+if (v.first  && propEntities.includes(v.first))  document.getElementById('vote1').value = v.first;
+if (v.second && propEntities.includes(v.second)) document.getElementById('vote2').value = v.second;
+if (v.third  && propEntities.includes(v.third))  document.getElementById('vote3').value = v.third;
     // Allow overwriting until match ends (simple UX)
     btn.disabled = false;
     btn.textContent = 'Update Votes';
