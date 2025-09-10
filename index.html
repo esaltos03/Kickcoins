@@ -894,6 +894,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
     if (tab.dataset.tab === "admin" && currentUser && isAdmin()) {
       renderPropsList();
       reviewBetsForAdminFS();
+      refreshAdminButtons(); // ← add this
     }
     // inside tab click handler:
 if (tab.dataset.tab === "vote") {
