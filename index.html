@@ -1203,7 +1203,7 @@ function reviewBetsForAdminFS(){
 
   // Only show for admins
   const userIsAdmin = isAdmin();
-  if (!isAdmin) {
+  if (!userIsAdmin) {
     const p = document.createElement('div');
     p.textContent = 'Admin only.';
     resolveDiv.appendChild(p);
