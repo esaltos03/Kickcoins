@@ -903,10 +903,11 @@ function updateUI(){
 
 // ------------------ MVP VOTING (Firestore) ------------------
 function populateVoting(){
+  // Use the MVP roster only
   ["vote1","vote2","vote3"].forEach(id=>{
     const sel = document.getElementById(id);
     sel.innerHTML = "";
-    (propEntities || []).forEach(p=>{
+    (mvpEntities || []).forEach(p=>{
       const opt = document.createElement("option");
       opt.value = p;
       opt.text = p;
@@ -917,7 +918,6 @@ function populateVoting(){
   // Attach / reattach the listener that will also prefill votes if they exist
   attachMyVoteListener();
 }
-
 function attachMyVoteListener(){
   detachMyVote();
   const st = window.__appState || {};
