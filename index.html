@@ -1377,9 +1377,8 @@ function resolveBet(username, bet, won){
         users[username].totalCoins += payout;
     }
     updateUI();
-    updateHistory();
-    updateLeaderboards();
-    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+updateLeaderboards();
+localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
 }
 
 // ------------------ LEADERBOARDS (MVP via Firestore) ------------------
