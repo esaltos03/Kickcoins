@@ -1336,7 +1336,7 @@ function reviewBetsForAdminFS(){
 }
 async function resolveBetGroupFS(matchNum, betGroup, won, cardEl){
   // Extra guard—admin only
-  if (!(currentUser && users[currentUser] && users[currentUser].isAdmin)) return;
+  if (!isAdmin()) return;
 
   try {
     const batch = db.batch();
