@@ -530,8 +530,9 @@ document.getElementById('logout-btn').addEventListener('click', async ()=>{
         delete propsUnsubs[k];
       });
     } catch(_) {}
-  }
-// React to Firebase login state changes (SAFE VERSION)
+    }
+});
+ // React to Firebase login state changes (SAFE VERSION)
 auth.onAuthStateChanged(async (user) => {
   // Clean up previous listener
   if (__meUnsub) { try { __meUnsub(); } catch(_){} __meUnsub = null; }
