@@ -638,20 +638,8 @@ stateRef.onSnapshot((snap) => {
   // keep your local currentMatch in sync for the parts still using it
   if (typeof currentMatch !== 'undefined') currentMatch = Number(st.currentMatch || 0);
 
-  // Admin button enable/disable (guard if elements exist)
-  const ob = document.getElementById('open-bets');
-  const cb = document.getElementById('close-bets');
-  const sm = document.getElementById('start-match');
-  const em = document.getElementById('end-match');
-
-  const userIsAdmin = isAdmin();
-
-  if (ob) ob.disabled = !userIsAdmin || !!st.bettingOpen;
-  if (cb) cb.disabled = !userIsAdmin || !st.bettingOpen;
-  if (sm) sm.disabled = !userIsAdmin || !!st.matchActive || !!st.bettingOpen;
-  if (em) em.disabled = !userIsAdmin || !st.matchActive;
-
-  // 🔴 NEW LINE: attach/update the live "My Bets" listener for this match
+  refreshAdminButtons();
+  // keep listening for my bets when match changes
   maybeAttachMyBetsListener(Number(st.currentMatch || 0));
 });
 function maybeAttachMyBetsListener(matchNum){
