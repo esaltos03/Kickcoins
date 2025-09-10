@@ -584,6 +584,7 @@ auth.onAuthStateChanged(async (user) => {
     };
     updateUI();           // header + admin tab vis
     renderBalanceFromFS(); // betting tab header
+    refreshAdminButtons(); // ← add this
   });
 
   // proceed
