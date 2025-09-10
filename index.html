@@ -1624,7 +1624,7 @@ function deleteUser(username){
 
 // ------------------ CLEAR VOTES ------------------
 document.getElementById('clear-votes').addEventListener('click',()=>{
-    if(!currentUser || !users[currentUser].isAdmin) return;
+    if(!currentUser || !isAdmin()) return;
     Object.keys(users).forEach(u=>users[u].votesThisMatch={});
     mvpScores={}; mvpHistory=[]; currentMatch=0;
     localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
