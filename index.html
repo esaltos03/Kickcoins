@@ -391,13 +391,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
     // --- DIAG STEP 1A: check project details ---
-setTimeout(()=>{
-  const opts = firebase.app().options || {};
-  alert(
-    'Project: ' + (opts.projectId || '(none)') +
-    '\nAuth domain: ' + (opts.authDomain || '(none)')
-  );
-}, 0);
     window.addEventListener('error', (e) => {
   alert('JS Error: ' + (e && e.message ? e.message : String(e)));
 });
