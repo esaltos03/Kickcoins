@@ -994,6 +994,9 @@ async function renderCoinLeaderboardFS(){
     let rank = 1;
     snap.forEach(doc => {
       const d = doc.data() || {};
+      // Skip archived users (active:false). Treat missing as active.
+      if (d.active === false) return;
+
       const name = d.username || '(user)';
       const coins = typeof d.coins === 'number' ? d.coins : 0;
 
@@ -1003,6 +1006,12 @@ async function renderCoinLeaderboardFS(){
       tbody.appendChild(tr);
       rank++;
     });
+
+    if (rank === 1) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="4" style="opacity:.8;">No active players yet.</td>`;
+      tbody.appendChild(tr);
+    }
   } catch (e) {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td colspan="4" style="color:red;">Leaderboard load failed: ${e && e.message ? e.message : e}</td>`;
