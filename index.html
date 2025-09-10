@@ -1636,7 +1636,6 @@ document.getElementById('add-prop').addEventListener('click', async ()=>{
   if (!name || !(odds > 0)) { alert('Enter valid prop name and odds'); return; }
 
   try {
-    // Add new prop object to that player's items array
     await db.collection('config')
       .doc('propsTemplate')
       .collection('byPlayer')
@@ -1647,13 +1646,12 @@ document.getElementById('add-prop').addEventListener('click', async ()=>{
 
     document.getElementById('new-prop').value = '';
     document.getElementById('new-odds').value = '';
-    // UI updates via props listener
     alert('Prop added.');
+    // UI auto-updates via listener
   } catch (e) {
-    alert('Add prop failed: ' + (e && e.message ? e.message : e));
+    alert('Add prop failed: ' + (e?.message || e));
   }
 });
-
 // ------------------ DELETE USER ------------------
 function deleteUser(username){
     if(!currentUser || !isAdmin()) return;
