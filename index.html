@@ -440,7 +440,7 @@ document.getElementById('login-btn').addEventListener('click', async ()=>{
             localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
         }
         showLogin(false);
-        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
+        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); populatePropAdmin();
         alert("Logged in!");
     } catch(err){ alert("Login failed: " + err.message); }
 });
@@ -467,7 +467,7 @@ document.getElementById('create-btn').addEventListener('click', async ()=>{
 
     currentUser = username;
     showLogin(false);
-    updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
+    updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); populatePropAdmin();
     alert("Account created & logged in!");
   } catch(err){
     if (err && err.code === 'auth/email-already-in-use') {
@@ -480,7 +480,7 @@ document.getElementById('create-btn').addEventListener('click', async ()=>{
           localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
         }
         showLogin(false);
-        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); updateHistory(); populatePropAdmin();
+        updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); populatePropAdmin();
         alert("Logged in!");
       } catch(signInErr){
         alert("Signup/Login failed: " + signInErr.message);
