@@ -1594,29 +1594,57 @@ async function resolveBetGroupFS(matchNum, betGroup, won, cardEl){
 
 // ------------------ LEADERBOARDS (MVP via Firestore) ------------------
 async function updateLeaderboards(){
-  // MVP leaderboard totals
-  try {
-    const tbody = document.getElementById('mvp-leaderboard').querySelector('tbody');
-    tbody.innerHTML = '';
-    const snap = await db.collection('mvpScores').orderBy('points','desc').get();
+  // MVP leaderboard totals (show everyone in the roster, default 0)
+try {
+  const tbody = document.getElementById('mvp-leaderboard').querySelector('tbody');
+  tbody.innerHTML = '';
+
+  // 1) Get the roster (prefer the live listener value; fallback to a direct read)
+  let roster = Array.isArray(mvpEntities) && mvpEntities.length ? mvpEntities.slice() : null;
+  if (!roster) {
+    const mvpDoc = await db.collection('config').doc('mvpPlayers').get();
+    roster = (mvpDoc.exists && Array.isArray(mvpDoc.data().list)) ? mvpDoc.data().list : [];
+  }
+
+  // 2) Read all scores (we’ll sort after merging)
+  const snap = await db.collection('mvpScores').get();
+  const scoreMap = {};
+  snap.forEach(doc => {
+    const d = doc.data() || {};
+    scoreMap[doc.id] = typeof d.points === 'number' ? d.points : 0;
+  });
+
+  // 3) Build rows = everyone in roster, defaulting to 0 points
+  const rows = roster.map(name => ({ name, points: scoreMap[name] || 0 }));
+
+  // Optional: include any players who still have points but aren’t in roster
+  Object.keys(scoreMap).forEach(name => {
+    if (!roster.includes(name)) rows.push({ name, points: scoreMap[name] || 0 });
+  });
+
+  // 4) Sort by points desc, then name asc
+  rows.sort((a,b) => (b.points - a.points) || a.name.localeCompare(b.name));
+
+  if (rows.length === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="3" style="opacity:.8;">No MVP roster yet.</td>`;
+    tbody.appendChild(tr);
+  } else {
     let rank = 1;
-    snap.forEach(doc=>{
-      const d = doc.data() || {};
-      const name = doc.id; // we use player name as doc id
-      const pts  = typeof d.points === 'number' ? d.points : 0;
+    rows.forEach(r => {
       const icon = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank<7?'🪨':'🍆';
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${rank} ${icon}</td><td>${name}</td><td>${pts}</td>`;
+      tr.innerHTML = `<td>${rank} ${icon}</td><td>${r.name}</td><td>${r.points}</td>`;
       tbody.appendChild(tr);
       rank++;
     });
-  } catch (e) {
-    const tbody = document.getElementById('mvp-leaderboard').querySelector('tbody');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="3" style="color:red;">MVP leaderboard failed: ${e && e.message ? e.message : e}</td>`;
-    tbody.appendChild(tr);
   }
-
+} catch (e) {
+  const tbody = document.getElementById('mvp-leaderboard').querySelector('tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td colspan="3" style="color:red;">MVP leaderboard failed: ${e && e.message ? e.message : e}</td>`;
+  tbody.appendChild(tr);
+}
   // MVP history per match
   try {
     const wrap = document.getElementById('mvp-history');
