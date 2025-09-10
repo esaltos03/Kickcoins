@@ -5,188 +5,223 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kickcoins - Fantasy Betting</title>
 <style>
-/* --- STYLES SAME AS ORIGINAL --- */
-body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; margin:0; padding:0; }
-header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background-color:#1a1a1a; }
-header .account { display:flex; align-items:center; gap:15px; }
-.tabs { display:flex; background-color:#1a1a1a; }
-.tab { flex:1; padding:10px; text-align:center; cursor:pointer; border-bottom:2px solid #121212; }
-.tab.active { border-bottom:2px solid #00ff00; }
-main { padding:20px; }
-.card { background-color:#1f1f1f; padding:15px; margin:10px 0; border-radius:8px; }
-.prop { display:flex; justify-content:space-between; align-items:center; margin:10px 0; }
-.prop input[type="number"] { width:70px; margin-left:10px; }
-select { padding:5px; }
-button { padding:5px 10px; cursor:pointer; border:none; border-radius:5px; }
-button:disabled { background-color: #555; cursor: not-allowed; }
-.green { color:#00ff00; }
-.red { color:#ff0000; }
-table { width:100%; border-collapse:collapse; }
-th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
-#login-card { max-width:400px; margin:50px auto; }
-.bet-payout { margin-left:10px; font-weight:bold; }
-.match-card {
-    background-color: #1f1f1f; /* Slightly different from page */
-    padding: 10px 15px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    border: 1px solid #333; /* subtle outline */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3); /* optional subtle shadow */
-}
-.match-card strong {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 1.1em;
-}
-.match-card ul {
-    padding-left: 20px;
-    margin: 0;
-}
-.match-card div.total {
-    margin-top: 8px;
-}
-.mvp-card {
-    background-color: #1f1f1f;
-    padding: 10px 15px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    border: 1px solid #333;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-.mvp-card strong {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 1.1em;
-}
-.mvp-card div.result {
-    padding-left: 20px;
-    margin: 2px 0;
-}
-/* Admin resolve bets styling */
-.resolve-bet {
-    background-color: #1f1f1f;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+/* ========== THEME ==========
+   - Purely visual changes (no structural/JS changes)
+   - Uses CSS variables for easy tweaks
+================================ */
+:root{
+  --bg: #0f1115;
+  --panel: #171a21;
+  --panel-2: #1b1f27;
+  --ink: #e8eef7;
+  --ink-dim: #b9c2d3;
+  --accent: #00ffa3;
+  --accent-2: #39c6ff;
+  --red: #ff4d4d;
+  --warning: #ffc46b;
+  --divider: #262b36;
+  --muted: #8c95a6;
+  --shadow: 0 10px 24px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.25);
+  --radius: 12px;
 }
 
-.resolve-bet-info {
-    font-weight: bold;
-    color: #fff;
-    margin-bottom: 5px;
+/* ===== Base ===== */
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
+body{
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+  background: radial-gradient(1200px 800px at 120% -10%, rgba(0,255,163,.06), transparent 60%),
+              radial-gradient(1200px 900px at -20% 120%, rgba(57,198,255,.05), transparent 60%),
+              var(--bg);
+  color: var(--ink);
+  margin:0;
+  padding:0;
+  line-height:1.45;
 }
 
-.resolve-buttons {
-    display: flex;
-    gap: 15px;
+/* ===== Header ===== */
+header{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 20px;
+  background: linear-gradient(180deg,#12151b, #0f1218);
+  border-bottom: 1px solid var(--divider);
+  position: sticky; top:0; z-index:60;
+}
+header h1{
+  margin:0; font-size:20px; letter-spacing:.3px; font-weight:700;
+  display:flex; align-items:center; gap:10px;
+}
+header h1::after{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background: radial-gradient(circle at 30% 30%, white 0 20%, var(--accent) 20% 100%);
+  filter: blur(.2px);
+}
+header .account{ display:flex; align-items:center; gap:14px; color:var(--ink-dim); font-weight:600; }
+#logout-btn{
+  background: transparent; border:1px solid var(--divider); color:var(--ink);
+  padding:6px 10px; border-radius:8px; cursor:pointer;
+}
+#logout-btn:hover{ border-color: var(--ink-dim); }
+
+/* ===== Tabs ===== */
+.tabs{
+  display:flex; background: #0f1218; border-bottom:1px solid var(--divider);
+  position: sticky; top:54px; z-index:55;
+}
+.tab{
+  flex:1; padding:12px; text-align:center; cursor:pointer; user-select:none;
+  color:var(--muted); font-weight:700; letter-spacing:.2px;
+  border-bottom:2px solid transparent;
+  transition: all .2s ease;
+}
+.tab:hover{ color:var(--ink); background: rgba(255,255,255,.02); }
+.tab.active{
+  color:var(--ink);
+  border-bottom-color: var(--accent);
+  background:
+    radial-gradient(600px 120px at 50% 110%, rgba(0,255,163,.08), transparent 60%);
 }
 
-.resolve-buttons button {
-    padding: 8px 20px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
+/* ===== Main / Cards ===== */
+main{ padding: 22px; max-width: 1000px; margin: 0 auto; }
+.card{
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  padding:18px; margin:14px 0; border-radius: var(--radius);
+  border: 1px solid var(--divider);
+  box-shadow: var(--shadow);
+}
+.card h2{ margin: 0 0 10px; font-size: 18px; letter-spacing:.3px; }
+h4{ margin: 6px 0 8px; color: var(--ink-dim); }
+
+/* ===== Inputs & Buttons ===== */
+label{ color: var(--ink-dim); margin-right:8px; }
+input[type="text"], input[type="number"], select{
+  background:#0f131a; color:var(--ink); border:1px solid #242a36;
+  padding:8px 10px; border-radius:10px; outline:none;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+input[type="text"]:focus, input[type="number"]:focus, select:focus{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,255,163,.12);
 }
 
-.resolve-buttons button.win {
-    background-color: #00ff00;
-    color: #000;
+button{
+  padding:10px 14px; cursor:pointer; border:none; border-radius:10px;
+  background: linear-gradient(180deg, #1f2530, #191e26);
+  color: var(--ink); font-weight:800; letter-spacing:.3px;
+  border:1px solid #2a3240; transition: transform .04s ease, border-color .2s ease, background .2s ease;
+}
+button:hover{ border-color: var(--accent); }
+button:active{ transform: translateY(1px); }
+button:disabled{
+  background: #141820; border-color: #1f2530; color:#6e7788; cursor:not-allowed;
 }
 
-.resolve-buttons button.lose {
-    background-color: #ff0000;
-    color: #fff;
+.green{ color: var(--accent); }
+.red{ color: var(--red); }
+.bet-payout{ margin-left: 10px; font-weight:800; }
+
+/* ===== Props list row ===== */
+.prop{
+  display:flex; justify-content:space-between; align-items:center;
+  margin:10px 0; padding:10px 12px; border-radius:10px;
+  background:#121722; border:1px solid #202636;
 }
-.admin-bet-card { margin: 10px 0; padding: 10px; background-color:#1f1f1f; border-radius:8px; }
-.admin-win-btn { background-color: #00ff00; color: #000; margin-right: 10px; padding:5px 12px; font-weight:bold; cursor:pointer; border:none; border-radius:5px; }
-.admin-lose-btn { background-color: #ff0000; color: #000; padding:5px 12px; font-weight:bold; cursor:pointer; border:none; border-radius:5px; }
-.total-coins {
-    font-weight: bold;
-    background-color: #222;   /* Slightly different from card */
-    padding: 5px 10px;
-    border-radius: 5px;
-    margin-top: 8px;
+.prop span{ font-weight:700; }
+
+/* ===== Tables ===== */
+table{ width:100%; border-collapse: collapse; overflow:hidden; border-radius: 12px; }
+thead th{
+  background:#121722; color:var(--ink-dim); font-weight:700; letter-spacing:.2px;
+  border-bottom:1px solid var(--divider); padding:10px;
 }
-/* Admin section cleanup */
-.admin-section {
-  background: #1e1e1e;
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 20px;
+tbody td{
+  padding:10px; border-bottom:1px solid #1e2431;
+}
+tbody tr:hover{ background:#0f141e; }
+
+/* ===== Match / MVP cards in history ===== */
+.match-card, .mvp-card{
+  background: linear-gradient(180deg, #171c26, #151a22);
+  border:1px solid #242b37; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+}
+.match-card strong, .mvp-card strong{ display:block; margin-bottom:8px; font-size: 16px; }
+.match-card ul{ padding-left:20px; margin:0; }
+.match-card .total{
+  font-weight:800; background: #11161f; padding:6px 10px; border-radius:8px; margin-top:8px;
 }
 
-.admin-section h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 18px;
-  color: #fff;
+/* ===== Admin resolve buttons ===== */
+.admin-bet-card{
+  margin:10px 0; padding:12px; background:#11161f; border-radius: 10px; border:1px solid #202636;
+}
+.admin-win-btn{
+  background: linear-gradient(180deg, #00ffa3, #00cf87);
+  color:#001a12; border:none; padding:8px 12px; border-radius:10px; font-weight:900; margin-right:10px;
+}
+.admin-lose-btn{
+  background: linear-gradient(180deg, #ff6666, #e84b4b);
+  color:#1a0000; border:none; padding:8px 12px; border-radius:10px; font-weight:900;
 }
 
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+/* ===== Admin sections ===== */
+.admin-section{
+  background: linear-gradient(180deg, #151a22, #131821);
+  border-radius: 12px; padding: 15px; margin-bottom: 20px; border:1px solid #232a38;
 }
+.admin-section h3{ margin:0 0 10px; font-size:18px; color: var(--ink); }
 
-.tag {
-  background: #2c2c2c;
-  padding: 5px 10px;
-  border-radius: 20px;
-  color: #fff;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
+.tag-list{ display:flex; flex-wrap:wrap; gap:8px; }
+.tag{
+  background:#11161f; padding:6px 10px; border-radius: 20px; color:#e6eefc; font-size:14px;
+  display:flex; align-items:center; border:1px solid #223048;
 }
+.tag button{
+  margin-left:8px; background:#2a394f; border:none; border-radius:50%;
+  width:20px; height:20px; font-size:12px; cursor:pointer; color:white;
+}
+.tag button:hover{ background:#364a68; }
 
-.tag button {
-  margin-left: 8px;
-  background: #ff4d4d;
-  border: none;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  font-size: 12px;
-  cursor: pointer;
-  color: white;
+/* ===== Status Bar ===== */
+#status-bar{
+  display:none; position: sticky; top: 54px; z-index: 58;
+  background: #111; border-top: 1px solid #333; border-bottom: 1px solid #333;
+  padding: 12px 16px; font-weight: 800; letter-spacing:.2px; text-align:center;
+  box-shadow: var(--shadow);
+  border-radius: 0 0 12px 12px;
 }
-/* === STATUS BAR === */
-#status-bar {
-  display:none;
-  position: sticky;          /* stays at top under header */
-  top: 0;
-  z-index: 50;
-  background: #111;
-  border-top: 1px solid #333;
-  border-bottom: 1px solid #333;
-  padding: 10px 16px;
-  font-weight: 600;
-  letter-spacing: .2px;
-}
-
-/* color themes */
 #status-bar.open      { background:#0f1f0f; color:#98ffa1; border-color:#1f5f1f; }
 #status-bar.closed    { background:#141414; color:#bbb;    border-color:#333;    }
 #status-bar.started   { background:#0f1626; color:#9ecbff; border-color:#294a7a; }
 #status-bar.ended     { background:#1f1010; color:#ffb4b4; border-color:#6a2323; }
-
-/* pulse border when something is LIVE */
-#status-bar.pulse {
-  box-shadow: 0 0 0 0 rgba(0,255,128,.7);
+#status-bar.pulse{
+  box-shadow: 0 0 0 0 rgba(0,255,163,.7);
   animation: pulseGlow 1.6s ease-out infinite;
 }
-@keyframes pulseGlow {
-  0%   { box-shadow: 0 0 0 0 rgba(0,255,128,.7); }
-  70%  { box-shadow: 0 0 0 14px rgba(0,255,128,0); }
-  100% { box-shadow: 0 0 0 0 rgba(0,255,128,0); }
+@keyframes pulseGlow{
+  0%   { box-shadow: 0 0 0 0 rgba(0,255,163,.6); }
+  70%  { box-shadow: 0 0 0 16px rgba(0,255,163,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,255,163,0); }
 }
 
-/* compact on mobile */
-@media (max-width: 480px) {
-  #status-bar { font-size: 14px; padding: 8px 12px; }
+/* ===== Login card ===== */
+#login-card{ max-width:420px; margin: 60px auto; padding: 22px; }
+
+/* ===== Responsive tweaks ===== */
+@media (max-width: 720px){
+  main{ padding:14px; }
+  .tabs{ top: 52px; }
+  header{ padding:12px 14px; }
+  #status-bar{ top: 50px; padding: 10px 12px; font-size: 14px; }
+  .admin-section{ padding:12px; }
+  button{ padding:9px 12px; }
+  input, select{ width: 100%; margin: 6px 0; }
+  .prop{ flex-direction: column; align-items: flex-start; gap:8px; }
+}
+
+/* Keep any legacy classes working */
+.total-coins{
+  font-weight:800; background:#11161f; padding:6px 10px; border-radius:8px; margin-top:8px;
 }
 </style>
 <!-- Firebase (compat build for Auth) -->
