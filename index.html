@@ -1437,21 +1437,7 @@ document.getElementById('end-match').addEventListener('click', async ()=>{
     alert('End match failed: ' + (e && e.message ? e.message : e));
   }
 });
-// Deletes a query's docs in chunks to avoid batch limits
-async function deleteQueryInBatches(query, batchSize = 300, label = 'items') {
-  let deletedTotal = 0;
-  while (true) {
-    const snap = await query.limit(batchSize).get();
-    if (snap.empty) break;
-    const batch = db.batch();
-    snap.docs.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
-    deletedTotal += snap.size;
-    // Small yield for client
-    await new Promise(r => setTimeout(r, 30));
-  }
-  console.log(`Deleted ${deletedTotal} ${label}.`);
-}
+
 async function computeMvpAndPersistFS(matchNum){
   // read all votes for the match
   const votesSnap = await db.collection('matches').doc(String(matchNum)).collection('votes').get();
