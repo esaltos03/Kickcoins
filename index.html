@@ -968,25 +968,38 @@ function attachMyVoteListener(){
 
   const voteRef = db.collection('matches').doc(String(matchNum)).collection('votes').doc(u.uid);
   myVoteUnsub = voteRef.onSnapshot((doc)=>{
-    const btn = document.getElementById('submit-votes');
-    if (!btn) return;
+    const btnEl = document.getElementById('submit-votes');
+    if (!btnEl) return;
 
     if (!doc.exists) {
-      btn.disabled = false;
-      btn.textContent = 'Submit Votes';
+      // no vote yet
+      btnEl.disabled = false;
+      btnEl.textContent = 'Submit Votes';
       return;
     }
 
-    // pre-fill UI (optional)
-const v = doc.data() || {};
-if (v.first  && mvpEntities.includes(v.first))  document.getElementById('vote1').value = v.first;
-if (v.second && mvpEntities.includes(v.second)) document.getElementById('vote2').value = v.second;
-if (v.third  && mvpEntities.includes(v.third))  document.getElementById('vote3').value = v.third;
-    // Allow overwriting until match ends (simple UX)
-    btn.disabled = false;
-    btn.textContent = 'Update Votes';
+    // pre-fill UI
+    const v = doc.data() || {};
+    if (v.first  && mvpEntities.includes(v.first))  document.getElementById('vote1').value = v.first;
+    if (v.second && mvpEntities.includes(v.second)) document.getElementById('vote2').value = v.second;
+    if (v.third  && mvpEntities.includes(v.third))  document.getElementById('vote3').value = v.third;
+
+    // 🔒 Respect lock
+    const locked = !!v.locked;
+    ['vote1','vote2','vote3'].forEach(id=>{
+      const el = document.getElementById(id);
+      if (el) el.disabled = locked;
+    });
+
+    if (locked) {
+      btnEl.disabled = true;
+      btnEl.textContent = 'Vote Locked';
+    } else {
+      btnEl.disabled = false;
+      btnEl.textContent = 'Submit Votes';
+    }
   }, (err)=>{
-    alert('Vote listener error: ' + (err && err.message ? err.message : String(err)));
+    alert('Vote listener error: ' + (err && err.message ? err.message : err));
   });
 }
 
