@@ -325,16 +325,7 @@ setTimeout(()=>{
     window.addEventListener('error', (e) => {
   alert('JS Error: ' + (e && e.message ? e.message : String(e)));
 });
-if(!localStorage.getItem('kickcoinsUsers')){
-    var users = {
-        "Erick": { password:"pass", totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false },
-        "Yansy": { password:"pass", totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false },
-        "admin": { password:"KickCoins123", isAdmin:true, totalCoins:0, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false }
-    };
-    localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
-}else{
-    var users = JSON.parse(localStorage.getItem('kickcoinsUsers'));
-}
+var users = {};
 
 const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Esdras","Alan","Byron","Josh"];
 let propEntities = localStorage.getItem('propEntities') ? JSON.parse(localStorage.getItem('propEntities')) : [...players];
