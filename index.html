@@ -887,7 +887,11 @@ function populateVoting(){
     });
   });
 
-  attachMyVoteListener(); // show existing vote state if any
+  attachMyVoteListener(); 
+if (v.first  && propEntities.includes(v.first))  document.getElementById('vote1').value = v.first;
+if (v.second && propEntities.includes(v.second)) document.getElementById('vote2').value = v.second;
+if (v.third  && propEntities.includes(v.third))  document.getElementById('vote3').value = v.third;
+    // show existing vote state if any
 }
 
 function attachMyVoteListener(){
