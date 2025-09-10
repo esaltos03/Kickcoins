@@ -153,6 +153,41 @@ th, td { padding:8px; text-align:left; border-bottom:1px solid #333; }
   cursor: pointer;
   color: white;
 }
+/* === STATUS BAR === */
+#status-bar {
+  display:none;
+  position: sticky;          /* stays at top under header */
+  top: 0;
+  z-index: 50;
+  background: #111;
+  border-top: 1px solid #333;
+  border-bottom: 1px solid #333;
+  padding: 10px 16px;
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+
+/* color themes */
+#status-bar.open      { background:#0f1f0f; color:#98ffa1; border-color:#1f5f1f; }
+#status-bar.closed    { background:#141414; color:#bbb;    border-color:#333;    }
+#status-bar.started   { background:#0f1626; color:#9ecbff; border-color:#294a7a; }
+#status-bar.ended     { background:#1f1010; color:#ffb4b4; border-color:#6a2323; }
+
+/* pulse border when something is LIVE */
+#status-bar.pulse {
+  box-shadow: 0 0 0 0 rgba(0,255,128,.7);
+  animation: pulseGlow 1.6s ease-out infinite;
+}
+@keyframes pulseGlow {
+  0%   { box-shadow: 0 0 0 0 rgba(0,255,128,.7); }
+  70%  { box-shadow: 0 0 0 14px rgba(0,255,128,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,255,128,0); }
+}
+
+/* compact on mobile */
+@media (max-width: 480px) {
+  #status-bar { font-size: 14px; padding: 8px 12px; }
+}
 </style>
 <!-- Firebase (compat build for Auth) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
