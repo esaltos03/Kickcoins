@@ -327,19 +327,7 @@ setTimeout(()=>{
 });
 var users = {};
 
-const players = ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Esdras","Alan","Byron","Josh"];
-let propEntities = localStorage.getItem('propEntities') ? JSON.parse(localStorage.getItem('propEntities')) : [...players];
-let mvpScores = {};
-let mvpHistory = [];
-players.forEach(p=>{ if(!mvpScores[p]) mvpScores[p]=0; });
-
-let propsTemplate = localStorage.getItem('propsTemplate') ? JSON.parse(localStorage.getItem('propsTemplate')) : {};
-propEntities.forEach(p=>{
-    if(!propsTemplate[p]) propsTemplate[p] = [{name:"Score", odds:4},{name:"Assist", odds:3},{name:"Anything", odds:2}];
-});
-localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
-
-let currentMatch = localStorage.getItem('currentMatch') ? parseInt(localStorage.getItem('currentMatch')) : 0;
+let currentMatch = 0; // ✅ keep a local var; Firestore listener keeps it in sync
 let adminBetsUnsub = null; // live listener for unresolved bets (Firestore)
 // === MVP (Firestore-driven) ===
 let myVoteUnsub = null;
