@@ -549,6 +549,7 @@ auth.onAuthStateChanged(async (user) => {
     __me = { coins: 0, availableCoins: 0, roles: { admin:false }, username: "" };
     showLogin(true);
     updateUI();
+    refreshAdminButtons(); // ← add this
     return;
   }
 
