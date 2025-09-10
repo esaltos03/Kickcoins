@@ -1765,6 +1765,42 @@ document.getElementById('promote-me').addEventListener('click', async ()=>{
     alert("Failed to promote: " + e.message);
   }
 });
+// TEMP: Seed config docs with defaults (players, props, MVP players)
+document.getElementById('seed-config').addEventListener('click', async ()=>{
+  if (!isAdmin()) { alert("Admin only."); return; }
+
+  try {
+    const cfg = db.collection('config');
+
+    // Betting roster
+    await cfg.doc('players').set({
+      list: ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Alan","Ace"]
+    }, { merge: true });
+
+    // MVP roster
+    await cfg.doc('mvpPlayers').set({
+      list: ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Alan","Ace"]
+    }, { merge: true });
+
+    // Default props
+    const defaultProps = [
+      { name:'Score', odds:4 },
+      { name:'Assist', odds:3 },
+      { name:'Anything', odds:2 }
+    ];
+
+    for (const p of ["Erick","Yansy","Bernie","Erubial","Samir","Angel","Abel","Alan","Ace"]) {
+      await cfg.doc('propsTemplate')
+        .collection('byPlayer')
+        .doc(p)
+        .set({ items: defaultProps }, { merge: true });
+    }
+
+    alert("Config seeded with players, MVP list, and default props.");
+  } catch (e) {
+    alert("Seed config failed: " + (e && e.message ? e.message : e));
+  }
+});
 </script>
 </body>
 </html>
