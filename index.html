@@ -514,15 +514,23 @@ document.getElementById('logout-btn').addEventListener('click', async ()=>{
     await auth.signOut();
   } catch (err) {
     alert("Logout failed: " + (err?.message || err));
-  } finally {
+    } finally {
     currentUser = null;
     showLogin(true);
-    try { if (myBetsUnsub)    { myBetsUnsub();    myBetsUnsub = null; } } catch(_){}
-    try { if (myVoteUnsub)    { myVoteUnsub();    myVoteUnsub = null; } } catch(_){}
-    try { if (adminBetsUnsub) { adminBetsUnsub(); adminBetsUnsub = null; } } catch(_){}
-  }
-});
 
+    // Detach ALL listeners so anon user doesn’t trip "permission denied"
+    try { if (myBetsUnsub)       { myBetsUnsub();       myBetsUnsub = null; } } catch(_){}
+    try { if (myVoteUnsub)       { myVoteUnsub();       myVoteUnsub = null; } } catch(_){}
+    try { if (adminBetsUnsub)    { adminBetsUnsub();    adminBetsUnsub = null; } } catch(_){}
+    try { if (playersUnsub)      { playersUnsub();      playersUnsub = null; } } catch(_){}
+    try { if (mvpPlayersUnsub)   { mvpPlayersUnsub();   mvpPlayersUnsub = null; } } catch(_){}
+    try {
+      Object.keys(propsUnsubs || {}).forEach(k=>{
+        try { propsUnsubs[k] && propsUnsubs[k](); } catch(_){}
+        delete propsUnsubs[k];
+      });
+    } catch(_) {}
+  }
 // React to Firebase login state changes (SAFE VERSION)
 auth.onAuthStateChanged(async (user) => {
   // Clean up previous listener
