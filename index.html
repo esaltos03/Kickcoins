@@ -1203,7 +1203,7 @@ function reviewBetsForAdminFS(){
   resolveDiv.innerHTML = "<h3>Resolve Bets (Firestore)</h3>";
 
   // Only show for admins
-  const isAdmin = !!(currentUser && users[currentUser] && users[currentUser].isAdmin);
+  const userIsAdmin = isAdmin();
   if (!isAdmin) {
     const p = document.createElement('div');
     p.textContent = 'Admin only.';
