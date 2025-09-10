@@ -2039,6 +2039,23 @@ document.getElementById('debug-status').addEventListener('click', async ()=>{
     alert('Debug failed: ' + (e?.message || e));
   }
 });
+document.getElementById('set-match-num').addEventListener('click', async ()=>{
+  if (!isAdmin()) { alert("Admin only."); return; }
+  const v = prompt("Set the current match number to:", "0");
+  if (v === null) return;
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < 0) { alert("Enter a non-negative integer."); return; }
+  try {
+    await db.collection('app').doc('state').set({
+      currentMatch: n,
+      bettingOpen: false,
+      matchActive: false
+    }, { merge: true });
+    alert(`Current match set to ${n}. Betting and match are now closed.`);
+  } catch (e) {
+    alert('Failed to set match #: ' + (e?.message || e));
+  }
+});
 </script>
 </body>
 </html>
