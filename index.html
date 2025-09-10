@@ -1545,15 +1545,28 @@ function renderEntityList(){
         btn.style.borderRadius = "4px";
         btn.style.cursor = "pointer";
 
-        btn.onclick = ()=>{
-    if(confirm(`Remove player "${e}" from betting?`)){
-        propEntities.splice(index,1);
-        delete propsTemplate[e]; // remove their props
-        localStorage.setItem('propEntities', JSON.stringify(propEntities));
-        localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
-        populatePropAdmin(); // refresh dropdown + entity list
-        populatePlayers();   // update betting dropdown
-    }
+        btn.onclick = async ()=>{
+  if (!isAdmin()) return;
+  if (!confirm(`Remove player "${e}" from betting? This also clears their props.`)) return;
+
+  try {
+    // 1) Remove from /config/players.list
+    await db.collection('config').doc('players').set({
+      list: firebase.firestore.FieldValue.arrayRemove(e)
+    }, { merge: true });
+
+    // 2) Delete that player’s props doc
+    await db.collection('config')
+      .doc('propsTemplate')
+      .collection('byPlayer')
+      .doc(e)
+      .delete();
+
+    // UI will auto-refresh via listeners
+    alert('Player removed.');
+  } catch (err) {
+    alert('Remove player failed: ' + (err && err.message ? err.message : err));
+  }
 };
 
         div.appendChild(btn);
