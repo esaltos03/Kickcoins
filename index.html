@@ -1463,68 +1463,78 @@ async function updateLeaderboards(){
 
 // ------------------ ADMIN PROP MANAGEMENT ------------------
 function populatePropAdmin(){
-    let sel = document.getElementById('prop-player'); 
-    sel.innerHTML = "";
+  const sel = document.getElementById('prop-player');
+  sel.innerHTML = "";
 
-    propEntities.forEach(p=>{ 
-        let opt = document.createElement("option"); 
-        opt.value = p; 
-        opt.text = p; 
-        sel.appendChild(opt); 
-    });
+  (propEntities || []).forEach(p=>{
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.text  = p;
+    sel.appendChild(opt);
+  });
 
-    renderPropsList();  // Render props for selected player
-    renderEntityList(); // Render list of players
+  // Render lists
+  renderPropsList();
+  renderEntityList();
 
-    // --- ADD ENTITY MANAGEMENT CONTROLS ---
-    let entityContainer = document.getElementById('prop-entity-container');
-    if(!entityContainer){
-        entityContainer = document.createElement('div');
-        entityContainer.id = 'prop-entity-container';
-        entityContainer.style.margin = "10px 0";
+  // --- ADD ENTITY MANAGEMENT CONTROLS (Add Player) ---
+  let entityContainer = document.getElementById('prop-entity-container');
+  if (!entityContainer) {
+    entityContainer = document.createElement('div');
+    entityContainer.id = 'prop-entity-container';
+    entityContainer.style.margin = "10px 0";
 
-        let input = document.createElement('input');
-        input.type = 'text';
-        input.id = 'new-entity';
-        input.placeholder = 'Enter new player';
-        input.style.margin = "0px 0px 10px 0px"
-        input.style.padding = "6px";
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'new-entity';
+    input.placeholder = 'Enter new player';
+    input.style.margin = "0 0 10px 0";
+    input.style.padding = "6px";
+    input.style.width = "100%";
 
-        let addBtn = document.createElement('button');
-        addBtn.onclick = async ()=>{
-  if (!isAdmin()) return;
-  const name = (document.getElementById('new-entity').value || '').trim();
-  if (!name) { alert('Enter a player name'); return; }
-  if (propEntities.includes(name)) { alert('Player already exists'); return; }
+    const addBtn = document.createElement('button');
+    addBtn.textContent = 'Add Player';
+    addBtn.style.marginTop = "6px";
 
-  try {
-    // 1) Add player to /config/players.list
-    await db.collection('config').doc('players').set({
-      list: firebase.firestore.FieldValue.arrayUnion(name)
-    }, { merge: true });
+    addBtn.onclick = async ()=>{
+      if (!isAdmin()) return;
+      const name = (document.getElementById('new-entity').value || '').trim();
+      if (!name) { alert('Enter a player name'); return; }
+      if ((propEntities || []).includes(name)) { alert('Player already exists'); return; }
 
-    // 2) Create default props doc for this player
-    await db.collection('config')
-      .doc('propsTemplate')
-      .collection('byPlayer')
-      .doc(name)
-      .set({
-        items: [
-          { name: 'Score',   odds: 4 },
-          { name: 'Assist',  odds: 3 },
-          { name: 'Anything',odds: 2 }
-        ]
-      }, { merge: true });
+      try {
+        // 1) Add to players list
+        await db.collection('config').doc('players').set({
+          list: firebase.firestore.FieldValue.arrayUnion(name)
+        }, { merge: true });
 
-    document.getElementById('new-entity').value = '';
-    // UI will auto-refresh via attachPlayersListener()
-    alert('Player added.');
-  } catch (e) {
-    alert('Add player failed: ' + (e && e.message ? e.message : e));
+        // 2) Default props doc for the player
+        await db.collection('config')
+          .doc('propsTemplate')
+          .collection('byPlayer')
+          .doc(name)
+          .set({
+            items: [
+              { name:'Score',    odds:4 },
+              { name:'Assist',   odds:3 },
+              { name:'Anything', odds:2 }
+            ]
+          }, { merge: true });
+
+        document.getElementById('new-entity').value = '';
+        alert('Player added.');
+        // UI auto-refreshes via attachPlayersListener()
+      } catch (e) {
+        alert('Add player failed: ' + (e?.message || e));
+      }
+    };
+
+    entityContainer.appendChild(input);
+    entityContainer.appendChild(addBtn);
+    sel.parentNode.insertBefore(entityContainer, sel.nextElementSibling);
   }
-};
-
-function renderEntityList(){
+}
+    function renderEntityList(){
     let container = document.getElementById('entity-list');
     if(!container){
         container = document.createElement('div');
