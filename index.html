@@ -1618,7 +1618,7 @@ document.getElementById('add-prop').addEventListener('click',()=>{
 
 // ------------------ DELETE USER ------------------
 function deleteUser(username){
-    if(!currentUser || !users[currentUser].isAdmin) return;
+    if(!currentUser || !isAdmin()) return;
     if(confirm(`Admin, confirm delete ${username}?`)){ delete users[username]; updateLeaderboards(); updateUI(); alert(`${username} deleted`); }
 }
 
