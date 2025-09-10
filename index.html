@@ -1485,30 +1485,38 @@ function populatePropAdmin(){
         input.style.padding = "6px";
 
         let addBtn = document.createElement('button');
-        addBtn.textContent = 'Add Player';
-        addBtn.onclick = ()=>{
-            let name = input.value.trim();
-            if(name && !propEntities.includes(name)){
-                propEntities.push(name);
-                // initialize default props
-                propsTemplate[name] = [
-                    {name:"Score", odds:4},
-                    {name:"Assist", odds:3},
-                    {name:"Anything", odds:2}
-                ];
-                localStorage.setItem('propEntities', JSON.stringify(propEntities));
-                localStorage.setItem('propsTemplate', JSON.stringify(propsTemplate));
-                input.value="";
-                populatePropAdmin(); // re-render everything
-                populatePlayers();    // update betting dropdown
-            }
-        };
+        addBtn.onclick = async ()=>{
+  if (!isAdmin()) return;
+  const name = (document.getElementById('new-entity').value || '').trim();
+  if (!name) { alert('Enter a player name'); return; }
+  if (propEntities.includes(name)) { alert('Player already exists'); return; }
 
-        entityContainer.appendChild(input);
-        entityContainer.appendChild(addBtn);
-        sel.parentNode.insertBefore(entityContainer, sel.nextSibling);
-    }
-}
+  try {
+    // 1) Add player to /config/players.list
+    await db.collection('config').doc('players').set({
+      list: firebase.firestore.FieldValue.arrayUnion(name)
+    }, { merge: true });
+
+    // 2) Create default props doc for this player
+    await db.collection('config')
+      .doc('propsTemplate')
+      .collection('byPlayer')
+      .doc(name)
+      .set({
+        items: [
+          { name: 'Score',   odds: 4 },
+          { name: 'Assist',  odds: 3 },
+          { name: 'Anything',odds: 2 }
+        ]
+      }, { merge: true });
+
+    document.getElementById('new-entity').value = '';
+    // UI will auto-refresh via attachPlayersListener()
+    alert('Player added.');
+  } catch (e) {
+    alert('Add player failed: ' + (e && e.message ? e.message : e));
+  }
+};
 
 function renderEntityList(){
     let container = document.getElementById('entity-list');
