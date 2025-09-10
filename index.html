@@ -2072,6 +2072,21 @@ document.getElementById('set-match-num').addEventListener('click', async ()=>{
     alert('Failed to set match #: ' + (e?.message || e));
   }
 });
+// Deletes a query's docs in chunks to avoid batch limits
+async function deleteQueryInBatches(query, batchSize = 300, label = 'items') {
+  let deletedTotal = 0;
+  while (true) {
+    const snap = await query.limit(batchSize).get();
+    if (snap.empty) break;
+    const batch = db.batch();
+    snap.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    deletedTotal += snap.size;
+    // Small pause so Firestore can catch up
+    await new Promise(r => setTimeout(r, 30));
+  }
+  console.log(`Deleted ${deletedTotal} ${label}.`);
+}
 document.getElementById('season-reset').addEventListener('click', async ()=>{
   if (!isAdmin()) { alert('Admin only.'); return; }
 
