@@ -793,7 +793,6 @@ document.querySelectorAll('.tab').forEach(tab=>{
 
     if (tab.dataset.tab === "history") {
       // keep your old local history for now (we’ll remove later)
-      updateHistory();
       // 🔴 NEW: Firestore leaderboard + full history
       renderCoinLeaderboardFS(); 
       loadFullBetHistoryFS();     // <<-- this replaces your old renderFullHistoryFS()
