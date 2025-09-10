@@ -1111,8 +1111,7 @@ document.getElementById('close-bets').addEventListener('click', async ()=>{
 
     usersSnap.forEach(doc => {
       const d = doc.data() || {};
-      const isAdmin = d.roles && d.roles.admin === true;
-      if (isAdmin) return;
+      if (!isAdmin()) {
 
       const currentAvail = typeof d.availableCoins === 'number' ? d.availableCoins : 0;
       if (currentAvail !== 0) {
