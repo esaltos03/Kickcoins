@@ -454,6 +454,9 @@ document.getElementById('create-btn').addEventListener('click', async ()=>{
 // LOGOUT
 document.getElementById('logout-btn').addEventListener('click', async ()=>{
     try { await auth.signOut(); currentUser=null; showLogin(true); }
+        try { if (myBetsUnsub)     { myBetsUnsub();     myBetsUnsub = null; } } catch(_){}
+try { if (myVoteUnsub)     { myVoteUnsub();     myVoteUnsub = null; } } catch(_){}
+try { if (adminBetsUnsub)  { adminBetsUnsub();  adminBetsUnsub = null; } } catch(_){}
     catch(err){ alert("Logout failed: " + err.message); }
 });
 
