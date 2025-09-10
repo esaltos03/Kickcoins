@@ -1535,61 +1535,56 @@ function populatePropAdmin(){
   }
 }
     function renderEntityList(){
-    let container = document.getElementById('entity-list');
-    if(!container){
-        container = document.createElement('div');
-        container.id = 'entity-list';
-        container.style.margin = "10px 0";
-        document.getElementById('prop-player').parentNode.appendChild(container);
-    }
-    container.innerHTML = "";
-
-    propEntities.forEach((e, index)=>{
-        let div = document.createElement("div");
-        div.id = "player-list";
-        div.textContent = e + " ";
-        div.style.margin = "4px";
-
-        // Remove player button
-        let btn = document.createElement("button");
-        btn.textContent = "Remove";
-        btn.style.marginLeft = "10px";
-        btn.style.padding = "3px 8px";
-        btn.style.backgroundColor = "#ff4d4d";
-        btn.style.color = "#fff";
-        btn.style.border = "none";
-        btn.style.borderRadius = "4px";
-        btn.style.cursor = "pointer";
-
-        btn.onclick = async ()=>{
-  if (!isAdmin()) return;
-  if (!confirm(`Remove player "${e}" from betting? This also clears their props.`)) return;
-
-  try {
-    // 1) Remove from /config/players.list
-    await db.collection('config').doc('players').set({
-      list: firebase.firestore.FieldValue.arrayRemove(e)
-    }, { merge: true });
-
-    // 2) Delete that player’s props doc
-    await db.collection('config')
-      .doc('propsTemplate')
-      .collection('byPlayer')
-      .doc(e)
-      .delete();
-
-    // UI will auto-refresh via listeners
-    alert('Player removed.');
-  } catch (err) {
-    alert('Remove player failed: ' + (err && err.message ? err.message : err));
+  let container = document.getElementById('entity-list');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'entity-list';
+    container.style.margin = "10px 0";
+    document.getElementById('prop-player').parentNode.appendChild(container);
   }
-};
+  container.innerHTML = "";
 
-        div.appendChild(btn);
-        container.appendChild(div);
-    });
+  (propEntities || []).forEach((playerName)=>{
+    const row = document.createElement('div');
+    row.style.margin = "6px 0";
+    row.textContent = playerName + " ";
+
+    const btn = document.createElement('button');
+    btn.textContent = "Remove";
+    btn.style.marginLeft = "10px";
+    btn.style.padding = "3px 8px";
+    btn.style.backgroundColor = "#ff4d4d";
+    btn.style.color = "#fff";
+    btn.style.border = "none";
+    btn.style.borderRadius = "4px";
+    btn.style.cursor = "pointer";
+
+    btn.onclick = async ()=>{
+      if (!isAdmin()) return;
+      if (!confirm(`Remove player "${playerName}" from betting? This also clears their props.`)) return;
+
+      try {
+        await db.collection('config').doc('players').set({
+          list: firebase.firestore.FieldValue.arrayRemove(playerName)
+        }, { merge: true });
+
+        await db.collection('config')
+          .doc('propsTemplate')
+          .collection('byPlayer')
+          .doc(playerName)
+          .delete();
+
+        alert('Player removed.');
+        // UI auto-refreshes via listeners
+      } catch (e) {
+        alert('Remove player failed: ' + (e?.message || e));
+      }
+    };
+
+    row.appendChild(btn);
+    container.appendChild(row);
+  });
 }
-
 function renderPropsList(){
     const container = document.getElementById('props-list');
     container.innerHTML = "";
