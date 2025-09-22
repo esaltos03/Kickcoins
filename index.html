@@ -105,6 +105,17 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus{
   box-shadow: 0 0 0 3px rgba(0,255,163,.12);
 }
 
+input[type="password"], input[type="number"], select{
+  background:#0f131a; color:var(--ink); border:1px solid #242a36;
+  padding:8px 10px; border-radius:10px; outline:none;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+input[type="password"]:focus, input[type="number"]:focus, select:focus{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,255,163,.12);
+}
+
+
 button{
   padding:10px 14px; cursor:pointer; border:none; border-radius:10px;
   background: linear-gradient(180deg, #1f2530, #191e26);
@@ -528,9 +539,12 @@ document.getElementById('login-btn').addEventListener('click', async ()=>{
         if(!users[username]){
             users[username] = { password:pass, totalCoins:100, availableCoins:0, votesThisMatch:{}, bets:[], mvpPoints:0, history:[], voted:false };
             localStorage.setItem('kickcoinsUsers', JSON.stringify(users));
+            localStorage.getItem('kickcoinsCurrentUser');
         }
         showLogin(false);
         updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); populatePropAdmin();
+        const appState = window.__appState || {};
+        renderStatusBar(appState);
         alert("Logged in!");
     } catch(err){ alert("Login failed: " + err.message); }
 });
@@ -558,6 +572,8 @@ document.getElementById('create-btn').addEventListener('click', async ()=>{
     currentUser = username;
     showLogin(false);
     updateUI(); populateVoting(); populatePlayers(); updateLeaderboards(); populatePropAdmin();
+    const appState = window.__appState || {};
+        renderStatusBar(appState);
     alert("Account created & logged in!");
   } catch(err){
     if (err && err.code === 'auth/email-already-in-use') {
@@ -603,6 +619,8 @@ document.getElementById('logout-btn').addEventListener('click', async ()=>{
         delete propsUnsubs[k];
       });
     } catch(_) {}
+      document.getElementById('status-bar').style.display = 'none';
+
     }
 });
  // React to Firebase login state changes (SAFE VERSION)
@@ -703,7 +721,10 @@ const ENABLE_STATUS_ALERTS = false;
 
 function renderStatusBar(st){
   const bar = document.getElementById('status-bar');
-  if (!bar) return;
+  if (!currentUser || !bar) {
+    bar.style.display = 'none'; // Hide the bar if no user is logged in
+    return;
+  }
 
   // Clear previous classes
   bar.className = '';
@@ -1048,9 +1069,16 @@ if (tab.dataset.tab === "vote") {
 function updateUI(){
   // account header
   const accEl = document.getElementById('account-info');
+  console.log('Updating UI for user:', currentUser);
   if (accEl) {
-    const name = currentUser || '(signed out)';
-    accEl.innerHTML = `${name} | Total: ${__me.coins} 💰 | Available: ${__me.availableCoins} 💸`;
+    if (currentUser) {
+      const name = currentUser || '(signed out)';
+      accEl.innerHTML = `${name} | Total: ${__me.coins} 💰 | Available: ${__me.availableCoins} 💸`;
+      accEl.style.display = 'flex';
+    } else {
+      // Hide account info when logged out
+      accEl.style.display = 'none';
+    }
   }
   // Admin tab visibility based on Firestore role (not local mirror)
   const adminTab = document.querySelector('.tab[data-tab="admin"]');
